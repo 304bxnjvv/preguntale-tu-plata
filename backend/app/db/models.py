@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Text, Numeric, Date, DateTime
 from app.db.base import Base
 
@@ -18,4 +18,4 @@ class Transaction(Base):
     categoria = Column(String, nullable=True)
     banco = Column(String, nullable=False)
     fuente = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
