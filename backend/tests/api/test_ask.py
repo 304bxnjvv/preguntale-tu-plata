@@ -29,6 +29,7 @@ def test_ask_passes_user_id(client):
 
 
 def test_ask_requires_auth():
+    app.dependency_overrides.clear()
     c = TestClient(app)
     r = c.post("/api/v1/chat/ask", json={"question": "hola"})
     assert r.status_code in (401, 403)
