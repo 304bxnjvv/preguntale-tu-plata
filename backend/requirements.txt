@@ -5,7 +5,7 @@ python-multipart==0.0.12
 # LangChain RAG
 langchain==0.3.7
 langchain-community==0.3.7
-langchain-google-genai==2.0.7
+sentence-transformers==3.3.1
 langchain-openai==0.2.9
 
 # Vector store
@@ -13,7 +13,7 @@ pgvector==0.3.6
 psycopg2-binary==2.9.10
 
 # DB / ORM
-sqlalchemy==2.0.36
+sqlalchemy==2.0.35
 
 # CSV parsing
 pandas==2.2.3
@@ -21,6 +21,7 @@ pandas==2.2.3
 # Validation
 pydantic==2.10.3
 pydantic-settings==2.6.1
+pyjwt[crypto]==2.10.1
 
 # Env
 python-dotenv==1.0.1

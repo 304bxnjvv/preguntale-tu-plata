@@ -3,13 +3,17 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     deepseek_api_key: str
-    gemini_api_key: str
     postgres_url: str  # postgresql+psycopg2://user:pass@host:port/db
+    supabase_url: str
 
     deepseek_model: str = "deepseek-chat"
-    gemini_embedding_model: str = "models/text-embedding-004"
+    embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     rag_top_k: int = 6
     collection_name: str = "transacciones"
+
+    @property
+    def supabase_jwks_url(self) -> str:
+        return f"{self.supabase_url}/auth/v1/.well-known/jwks.json"
 
     class Config:
         env_file = ".env"
