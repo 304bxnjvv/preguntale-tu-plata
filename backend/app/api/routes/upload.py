@@ -5,7 +5,7 @@ from app.parsers.santander_parser import SantanderParser
 from app.parsers.banco_estado_parser import BancoEstadoParser
 from app.services.transaction_service import insert_transactions, list_transactions, get_summary
 from app.rag.rag_service import indexar_transacciones
-from app.models.schemas import UploadResponse, TransactionOut
+from app.models.schemas import UploadResponse, TransactionOut, SummaryResponse
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
 
@@ -31,7 +31,7 @@ async def upload_csv(
             status_code=400,
             detail=f"Banco '{banco}' no soportado. Opciones: {list(PARSERS.keys())}",
         )
-    if not file.filename.endswith(".csv"):
+    if not (file.filename or "").endswith(".csv"):
         raise HTTPException(status_code=400, detail="Solo se aceptan archivos CSV.")
 
     content = await file.read()
@@ -63,7 +63,7 @@ async def listar_transacciones(
     return list_transactions(session, user_id, banco=banco, limit=limit, offset=offset)
 
 
-@router.get("/transactions/summary")
+@router.get("/transactions/summary", response_model=SummaryResponse)
 async def resumen(
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),

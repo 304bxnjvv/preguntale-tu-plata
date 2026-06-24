@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import date
 from typing import Optional
 
@@ -47,5 +47,25 @@ class TransactionOut(BaseModel):
     banco: str
     fuente: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MonedaTotales(BaseModel):
+    ingresos: float  # positivo
+    gastos: float    # negativo (los gastos son montos < 0)
+
+
+class CategoriaTotal(BaseModel):
+    categoria: str
+    total: float     # negativo
+
+
+class BancoTotal(BaseModel):
+    banco: str
+    total: float     # negativo
+
+
+class SummaryResponse(BaseModel):
+    por_moneda: dict[str, MonedaTotales]
+    gastos_por_categoria: list[CategoriaTotal]
+    gastos_por_banco: list[BancoTotal]
