@@ -57,9 +57,11 @@ def indexar_transacciones(transacciones: list[Transaccion], user_id: str) -> int
     return len(docs)
 
 
-def ask(question: str) -> AskResponse:
+def ask(question: str, user_id: str) -> AskResponse:
     vs = get_vector_store()
-    docs = vs.similarity_search(question, k=settings.rag_top_k)
+    docs = vs.similarity_search(
+        question, k=settings.rag_top_k, filter={"user_id": user_id}
+    )
 
     context = "\n".join(f"- {d.page_content}" for d in docs)
     chain = PROMPT | _llm()
@@ -73,5 +75,4 @@ def ask(question: str) -> AskResponse:
         )
         for d in docs
     ]
-
     return AskResponse(answer=answer.content, citations=citations)
