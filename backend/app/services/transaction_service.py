@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.db.models import Transaction
 from app.models.schemas import Transaccion
 
@@ -60,3 +61,58 @@ def insert_transactions(
 
     session.commit()
     return inserted
+
+
+def get_summary(session: Session, user_id: str) -> dict:
+    rows = (
+        session.query(
+            Transaction.moneda,
+            func.sum(Transaction.monto),
+        )
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.monto < 0)
+        .group_by(Transaction.moneda)
+        .all()
+    )
+    ingresos_rows = (
+        session.query(Transaction.moneda, func.sum(Transaction.monto))
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.monto >= 0)
+        .group_by(Transaction.moneda)
+        .all()
+    )
+
+    por_moneda: dict = {}
+    for moneda, total in rows:
+        por_moneda.setdefault(moneda, {"ingresos": 0.0, "gastos": 0.0})
+        por_moneda[moneda]["gastos"] = float(total)
+    for moneda, total in ingresos_rows:
+        por_moneda.setdefault(moneda, {"ingresos": 0.0, "gastos": 0.0})
+        por_moneda[moneda]["ingresos"] = float(total)
+
+    cat_rows = (
+        session.query(Transaction.categoria, func.sum(Transaction.monto))
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.monto < 0)
+        .filter(Transaction.categoria.isnot(None))
+        .group_by(Transaction.categoria)
+        .all()
+    )
+    gastos_por_categoria = [
+        {"categoria": c, "total": float(t)} for c, t in cat_rows
+    ]
+
+    banco_rows = (
+        session.query(Transaction.banco, func.sum(Transaction.monto))
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.monto < 0)
+        .group_by(Transaction.banco)
+        .all()
+    )
+    gastos_por_banco = [{"banco": b, "total": float(t)} for b, t in banco_rows]
+
+    return {
+        "por_moneda": por_moneda,
+        "gastos_por_categoria": gastos_por_categoria,
+        "gastos_por_banco": gastos_por_banco,
+    }
