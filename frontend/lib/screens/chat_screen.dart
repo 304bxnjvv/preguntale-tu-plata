@@ -36,6 +36,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Pregúntale a tu plata')),

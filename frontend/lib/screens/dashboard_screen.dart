@@ -55,7 +55,7 @@ class DashboardScreen extends ConsumerWidget {
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
           children: [
             summary.when(
               loading: () => const Center(child: Padding(
