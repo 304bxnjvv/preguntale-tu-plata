@@ -1,0 +1,12 @@
+.venv/
+venv/
+.env
+.env.example
+tests/
+migrations/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+run.ps1
+.git/

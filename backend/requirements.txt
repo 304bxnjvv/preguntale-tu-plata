@@ -5,7 +5,7 @@ python-multipart==0.0.12
 # LangChain RAG
 langchain==0.3.7
 langchain-community==0.3.7
-sentence-transformers==3.3.1
+fastembed==0.8.0
 langchain-openai==0.2.9
 
 # Vector store

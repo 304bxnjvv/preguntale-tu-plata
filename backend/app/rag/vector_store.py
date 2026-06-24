@@ -1,14 +1,12 @@
 from langchain_community.vectorstores import PGVector
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from app.config import settings
 
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name=settings.embedding_model,
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
-    )
+    # fastembed (ONNX) en vez de torch/sentence-transformers: mismo modelo
+    # multilingüe (384-dim), mucho menos RAM → deployable en host chico.
+    return FastEmbedEmbeddings(model_name=settings.embedding_model)
 
 
 def get_vector_store() -> PGVector:

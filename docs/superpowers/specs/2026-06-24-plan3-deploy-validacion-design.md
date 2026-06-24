@@ -4,6 +4,13 @@
 **Estado:** Aprobado para implementación
 **Depende de:** Plans 1 y 2 (backend + frontend) completos y mergeados.
 
+> **Actualización (durante ejecución):** el backend NO va a Fly.io sino a **Hugging Face
+> Spaces** (Docker SDK, CPU basic gratis, 16GB RAM, sin tarjeta — Fly.io rechazaba la tarjeta
+> chilena). Lo demás del diseño se mantiene. El contenedor escucha en el puerto **7860** (HF),
+> los secrets se setean en Settings del Space, y se despliega haciendo `git subtree push` de
+> `backend/` al repo del Space. fastembed usa `paraphrase-multilingual-MiniLM-L12-v2` (mismo
+> modelo que antes, 384-dim → **no hay que re-indexar**).
+
 ---
 
 ## 1. Resumen
