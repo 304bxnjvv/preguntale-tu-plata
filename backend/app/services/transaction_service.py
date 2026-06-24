@@ -3,7 +3,9 @@ from app.db.models import Transaction
 from app.models.schemas import Transaccion
 
 
-def _dedup_key(user_id, fecha, monto, descripcion, tarjeta):
+def _dedup_key(
+    user_id: str, fecha, monto, descripcion: str, tarjeta: str | None
+) -> tuple:
     return (
         user_id,
         str(fecha),
@@ -19,10 +21,19 @@ def insert_transactions(
     transacciones: list[Transaccion],
     fuente: str = "cartola",
 ) -> int:
-    existing = session.query(Transaction).filter_by(user_id=user_id).all()
+    existing = (
+        session.query(
+            Transaction.fecha,
+            Transaction.monto,
+            Transaction.descripcion,
+            Transaction.tarjeta,
+        )
+        .filter(Transaction.user_id == user_id)
+        .all()
+    )
     seen = {
-        _dedup_key(user_id, t.fecha, t.monto, t.descripcion, t.tarjeta)
-        for t in existing
+        _dedup_key(user_id, fecha, monto, descripcion, tarjeta)
+        for (fecha, monto, descripcion, tarjeta) in existing
     }
 
     inserted = 0
@@ -37,7 +48,7 @@ def insert_transactions(
                 fecha=t.fecha,
                 descripcion=t.descripcion,
                 monto=t.monto,
-                moneda=t.moneda or "CLP",
+                moneda=t.moneda,
                 tarjeta=t.tarjeta,
                 tipo=t.tipo,
                 categoria=t.categoria,
