@@ -1,29 +1,45 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
+import '../theme.dart';
 
 class TransactionTile extends StatelessWidget {
   final Transaction t;
   const TransactionTile({super.key, required this.t});
 
-  String _monto(double m) {
-    final neg = m < 0;
-    final abs = m.abs().toStringAsFixed(0).replaceAllMapped(
-        RegExp(r'(\d)(?=(\d{3})+$)'), (mm) => '${mm[1]}.');
-    return '${neg ? '-' : '+'}\$$abs';
-  }
-
   @override
   Widget build(BuildContext context) {
     final gasto = t.monto < 0;
-    return ListTile(
-      dense: true,
-      title: Text(t.descripcion, style: const TextStyle(color: Color(0xFFE6EDF3))),
-      subtitle: Text('${t.fecha} · ${t.banco}',
-          style: const TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
-      trailing: Text(_monto(t.monto),
-          style: TextStyle(
-              color: gasto ? const Color(0xFFF85149) : const Color(0xFF00C896),
-              fontWeight: FontWeight.w600)),
+    final color = gasto ? AppColors.negative : AppColors.positive;
+    final icon = gasto ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        title: Text(
+          t.descripcion,
+          style: AppText.body(14, weight: FontWeight.w500),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          '${t.fecha} · ${t.banco}',
+          style: AppText.label(AppColors.textMuted),
+        ),
+        trailing: Text(
+          formatCLP(t.monto, conSigno: true),
+          style: AppText.amount(15, color: color),
+        ),
+      ),
     );
   }
 }

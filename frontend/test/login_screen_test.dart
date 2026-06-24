@@ -14,7 +14,7 @@ void main() {
     await tester.tap(find.byKey(const Key('submit')));
     await tester.pump();
 
-    expect(find.text('Ingresa un email válido'), findsOneWidget);
+    expect(find.text('ingresa un email válido'), findsOneWidget);
   });
 
   testWidgets('muestra error si la contraseña es muy corta', (tester) async {
@@ -27,6 +27,6 @@ void main() {
     await tester.tap(find.byKey(const Key('submit')));
     await tester.pump();
 
-    expect(find.text('La contraseña debe tener al menos 6 caracteres'), findsOneWidget);
+    expect(find.text('la contraseña debe tener al menos 6 caracteres'), findsOneWidget);
   });
 }

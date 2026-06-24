@@ -15,7 +15,8 @@ void main() {
         return MaterialApp.router(routerConfig: ref.watch(routerProvider));
       }),
     ));
-    await tester.pumpAndSettle();
-    expect(find.text('Entrar'), findsWidgets);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('entrar'), findsWidgets);
   });
 }

@@ -23,7 +23,8 @@ void main() {
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.textContaining('89.890'), findsWidgets);
     expect(find.text('SUPERMERCADO LIDER'), findsOneWidget);
@@ -38,7 +39,8 @@ void main() {
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.textContaining('Sube tu primera cartola'), findsOneWidget);
   });

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config.dart';
 import 'router.dart';
+import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,16 +24,7 @@ class PreguntaleApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Pregúntale a tu plata',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0D1117),
-        colorScheme: const ColorScheme.dark(
-          surface: Color(0xFF161B22),
-          primary: Color(0xFF00C896),
-          onPrimary: Color(0xFF0D1117),
-        ),
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       routerConfig: router,
     );
   }
