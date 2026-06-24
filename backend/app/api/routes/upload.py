@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.parsers.bci_parser import BciParser
 from app.parsers.santander_parser import SantanderParser
 from app.parsers.banco_estado_parser import BancoEstadoParser
-from app.services.transaction_service import insert_transactions
+from app.services.transaction_service import insert_transactions, list_transactions, get_summary
 from app.rag.rag_service import indexar_transacciones
-from app.models.schemas import UploadResponse
+from app.models.schemas import UploadResponse, TransactionOut
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
 
@@ -50,3 +50,22 @@ async def upload_csv(
         transacciones_procesadas=len(nuevas),
         message=f"{len(nuevas)} transacciones nuevas indexadas ({len(transacciones) - len(nuevas)} duplicadas omitidas).",
     )
+
+
+@router.get("/transactions", response_model=list[TransactionOut])
+async def listar_transacciones(
+    banco: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    return list_transactions(session, user_id, banco=banco, limit=limit, offset=offset)
+
+
+@router.get("/transactions/summary")
+async def resumen(
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    return get_summary(session, user_id)

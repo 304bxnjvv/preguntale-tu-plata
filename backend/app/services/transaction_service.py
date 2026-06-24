@@ -63,6 +63,19 @@ def insert_transactions(
     return nuevas
 
 
+def list_transactions(
+    session: Session,
+    user_id: str,
+    banco: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[Transaction]:
+    q = session.query(Transaction).filter(Transaction.user_id == user_id)
+    if banco:
+        q = q.filter(Transaction.banco == banco)
+    return q.order_by(Transaction.fecha.desc()).limit(limit).offset(offset).all()
+
+
 def get_summary(session: Session, user_id: str) -> dict:
     rows = (
         session.query(

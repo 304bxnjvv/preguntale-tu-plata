@@ -33,3 +33,19 @@ class UploadResponse(BaseModel):
     banco: str
     transacciones_procesadas: int
     message: str
+
+
+class TransactionOut(BaseModel):
+    id: str
+    fecha: date
+    descripcion: str
+    monto: float
+    moneda: str
+    tarjeta: Optional[str] = None
+    tipo: str
+    categoria: Optional[str] = None
+    banco: str
+    fuente: str
+
+    class Config:
+        from_attributes = True
