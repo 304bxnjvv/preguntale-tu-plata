@@ -211,9 +211,9 @@ app.
 - `.env` **nunca** se commitea (ya en `.gitignore`).
 - JWT validado server-side en cada request; nada confía en el cliente.
 - RLS en Supabase como segunda barrera de aislamiento de datos.
-- **Pendiente del usuario:** la contraseña de Supabase `REDACTED` se compartió en
-  texto plano durante el desarrollo; debe cambiarse en el dashboard de Supabase antes de
-  exponer el proyecto públicamente.
+- **Pendiente del usuario:** la contraseña de la base de datos se compartió en texto plano
+  durante el desarrollo; debe rotarse en el dashboard de Supabase antes de exponer el
+  proyecto públicamente.
 
 ---
 
