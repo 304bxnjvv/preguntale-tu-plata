@@ -62,4 +62,5 @@ def test_upload_inserts_and_dedups(client):
     # Re-subir el mismo CSV → 0 nuevas (dedup).
     r2 = client.post("/api/v1/transactions/upload-csv?banco=bci",
                      files={"file": ("c.csv", io.BytesIO(CSV), "text/csv")})
+    assert r2.status_code == 201
     assert r2.json()["transacciones_procesadas"] == 0

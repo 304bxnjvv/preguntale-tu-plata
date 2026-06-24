@@ -43,10 +43,10 @@ async def upload_csv(
 
     nuevas = insert_transactions(session, user_id, transacciones, fuente="cartola")
     if nuevas:
-        indexar_transacciones(transacciones, user_id)
+        indexar_transacciones(nuevas, user_id)
 
     return UploadResponse(
         banco=banco,
-        transacciones_procesadas=nuevas,
-        message=f"{nuevas} transacciones nuevas indexadas ({len(transacciones) - nuevas} duplicadas omitidas).",
+        transacciones_procesadas=len(nuevas),
+        message=f"{len(nuevas)} transacciones nuevas indexadas ({len(transacciones) - len(nuevas)} duplicadas omitidas).",
     )

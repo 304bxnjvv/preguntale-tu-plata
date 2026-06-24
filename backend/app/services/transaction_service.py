@@ -21,7 +21,7 @@ def insert_transactions(
     user_id: str,
     transacciones: list[Transaccion],
     fuente: str = "cartola",
-) -> int:
+) -> list[Transaccion]:
     existing = (
         session.query(
             Transaction.fecha,
@@ -37,7 +37,7 @@ def insert_transactions(
         for (fecha, monto, descripcion, tarjeta) in existing
     }
 
-    inserted = 0
+    nuevas: list[Transaccion] = []
     for t in transacciones:
         key = _dedup_key(user_id, t.fecha, t.monto, t.descripcion, t.tarjeta)
         if key in seen:
@@ -57,10 +57,10 @@ def insert_transactions(
                 fuente=fuente,
             )
         )
-        inserted += 1
+        nuevas.append(t)
 
     session.commit()
-    return inserted
+    return nuevas
 
 
 def get_summary(session: Session, user_id: str) -> dict:

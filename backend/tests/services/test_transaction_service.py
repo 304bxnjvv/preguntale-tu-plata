@@ -17,20 +17,20 @@ def _txn(desc="LIDER", monto=-45000.0, tarjeta=None):
 
 def test_insert_returns_count(session):
     n = insert_transactions(session, "u1", [_txn(), _txn("UBER", -12500)])
-    assert n == 2
+    assert len(n) == 2
     assert session.query(Transaction).filter_by(user_id="u1").count() == 2
 
 
 def test_insert_dedups_repeated(session):
     txns = [_txn()]
-    assert insert_transactions(session, "u1", txns) == 1
-    assert insert_transactions(session, "u1", txns) == 0  # duplicado, no inserta
+    assert len(insert_transactions(session, "u1", txns)) == 1
+    assert len(insert_transactions(session, "u1", txns)) == 0  # duplicado, no inserta
     assert session.query(Transaction).filter_by(user_id="u1").count() == 1
 
 
 def test_same_desc_distinct_card_not_dedup(session):
-    assert insert_transactions(session, "u1", [_txn(tarjeta="4521")]) == 1
-    assert insert_transactions(session, "u1", [_txn(tarjeta="9988")]) == 1
+    assert len(insert_transactions(session, "u1", [_txn(tarjeta="4521")])) == 1
+    assert len(insert_transactions(session, "u1", [_txn(tarjeta="9988")])) == 1
     assert session.query(Transaction).filter_by(user_id="u1").count() == 2
 
 
