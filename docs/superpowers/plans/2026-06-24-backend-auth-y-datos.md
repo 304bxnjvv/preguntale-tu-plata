@@ -21,88 +21,120 @@
 
 ---
 
-### Task 1: Auth — validación del JWT de Supabase
+### Task 1: Auth — validación del JWT de Supabase (claves asimétricas ES256/JWKS)
 
 **Files:**
 - Create: `backend/app/auth/__init__.py`
 - Create: `backend/app/auth/jwt.py`
-- Modify: `backend/app/config.py` (agregar `supabase_jwt_secret`)
-- Modify: `backend/requirements.txt` (agregar `pyjwt`)
-- Modify: `backend/.env` y `backend/.env.example` (agregar `SUPABASE_JWT_SECRET`)
+- Modify: `backend/app/config.py` (agregar `supabase_url`)
+- Modify: `backend/requirements.txt` (agregar `pyjwt[crypto]`)
+- Modify: `backend/.env` y `backend/.env.example` (agregar `SUPABASE_URL`)
 - Test: `backend/tests/auth/test_jwt.py`
 
+**Contexto:** los proyectos Supabase nuevos firman los JWT con **claves asimétricas
+ECC P-256 (ES256)**, no con un secret compartido HS256. El backend valida los tokens con
+la **clave pública** publicada en el JWKS del proyecto
+(`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`). No hay secreto que filtrar.
+
 **Interfaces:**
-- Consumes: `settings.supabase_jwt_secret` (str).
+- Consumes: `settings.supabase_url` (str, ej. `https://bwjupdnnwgosivknpsoy.supabase.co`).
 - Produces:
-  - `decode_user_id(token: str, secret: str) -> str` — devuelve el `sub` (user_id) o lanza excepción.
-  - `get_current_user(creds=Depends(HTTPBearer())) -> str` — dependency FastAPI; 401 si el token es inválido.
+  - `decode_user_id(token: str, key, algorithms: list[str]) -> str` — valida firma + `aud='authenticated'`, devuelve el `sub`; lanza si es inválido.
+  - `get_current_user(creds=Depends(HTTPBearer())) -> str` — dependency FastAPI; obtiene la clave pública del JWKS y valida; 401 si falla.
 
 - [ ] **Step 1: Agregar dependencia PyJWT**
 
 En `backend/requirements.txt`, bajo la sección de validación, agregar:
 
 ```
-pyjwt==2.10.1
+pyjwt[crypto]==2.10.1
 ```
+
+(El extra `[crypto]` trae `cryptography`, necesario para verificar firmas ES256.)
 
 Instalar:
 
-Run: `cd backend && .\.venv\Scripts\pip install pyjwt==2.10.1`
-Expected: `Successfully installed pyjwt-2.10.1`
+Run: `cd backend && .\.venv\Scripts\pip install "pyjwt[crypto]==2.10.1"`
+Expected: `Successfully installed pyjwt-2.10.1` (cryptography ya estaba instalado)
 
 - [ ] **Step 2: Agregar el secret a config y .env**
 
-En `backend/app/config.py`, agregar el campo dentro de `Settings`:
+En `backend/app/config.py`, agregar el campo y una property dentro de `Settings`:
 
 ```python
-    supabase_jwt_secret: str
+    supabase_url: str
 ```
 
-(Va junto a `deepseek_api_key` y `postgres_url`.)
+Y, después de los campos (antes de `class Config`), agregar la property:
 
-En `backend/.env` agregar la línea (el valor real está en Supabase → Project Settings → API → JWT Secret):
+```python
+    @property
+    def supabase_jwks_url(self) -> str:
+        return f"{self.supabase_url}/auth/v1/.well-known/jwks.json"
+```
+
+En `backend/.env` agregar la línea (es la URL pública del proyecto, no un secreto):
 
 ```
-SUPABASE_JWT_SECRET=tu-jwt-secret-de-supabase
+SUPABASE_URL=https://bwjupdnnwgosivknpsoy.supabase.co
 ```
 
 En `backend/.env.example` agregar:
 
 ```
-SUPABASE_JWT_SECRET=...
+SUPABASE_URL=https://TU_REF.supabase.co
 ```
 
 - [ ] **Step 3: Escribir el test que falla**
 
-Crear `backend/tests/auth/test_jwt.py`:
+Crear `backend/tests/auth/test_jwt.py` (genera un par de claves EC localmente para
+firmar tokens ES256 de prueba, sin tocar la red):
 
 ```python
 import jwt
 import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
 from app.auth.jwt import decode_user_id
 
-SECRET = "test-secret-123"
+
+def _keypair():
+    priv = ec.generate_private_key(ec.SECP256R1())
+    priv_pem = priv.private_bytes(
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    )
+    pub_pem = priv.public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    return priv_pem, pub_pem
 
 
 def test_decode_valid_token_returns_user_id():
+    priv, pub = _keypair()
     token = jwt.encode(
-        {"sub": "user-abc", "aud": "authenticated"}, SECRET, algorithm="HS256"
+        {"sub": "user-abc", "aud": "authenticated"}, priv, algorithm="ES256"
     )
-    assert decode_user_id(token, SECRET) == "user-abc"
+    assert decode_user_id(token, pub, ["ES256"]) == "user-abc"
 
 
 def test_decode_token_without_sub_raises():
-    token = jwt.encode({"aud": "authenticated"}, SECRET, algorithm="HS256")
+    priv, pub = _keypair()
+    token = jwt.encode({"aud": "authenticated"}, priv, algorithm="ES256")
     with pytest.raises(ValueError):
-        decode_user_id(token, SECRET)
+        decode_user_id(token, pub, ["ES256"])
 
 
-def test_decode_token_with_wrong_secret_raises():
+def test_decode_token_with_wrong_key_raises():
+    priv1, _ = _keypair()
+    _, pub2 = _keypair()
     token = jwt.encode(
-        {"sub": "user-abc", "aud": "authenticated"}, "otro-secret", algorithm="HS256"
+        {"sub": "user-abc", "aud": "authenticated"}, priv1, algorithm="ES256"
     )
     with pytest.raises(jwt.InvalidTokenError):
-        decode_user_id(token, SECRET)
+        decode_user_id(token, pub2, ["ES256"])
 ```
 
 Crear archivo vacío `backend/tests/__init__.py` y `backend/tests/auth/__init__.py`.
@@ -120,17 +152,18 @@ Crear `backend/app/auth/jwt.py`:
 
 ```python
 import jwt
+from jwt import PyJWKClient
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import settings
 
 
-def decode_user_id(token: str, secret: str) -> str:
-    """Valida un JWT de Supabase (HS256) y devuelve el user_id (claim 'sub')."""
+def decode_user_id(token: str, key, algorithms: list[str]) -> str:
+    """Valida un JWT de Supabase y devuelve el user_id (claim 'sub')."""
     payload = jwt.decode(
         token,
-        secret,
-        algorithms=["HS256"],
+        key,
+        algorithms=algorithms,
         audience="authenticated",
     )
     user_id = payload.get("sub")
@@ -140,13 +173,16 @@ def decode_user_id(token: str, secret: str) -> str:
 
 
 _bearer = HTTPBearer()
+# PyJWKClient es lazy: no llama a la red hasta el primer get_signing_key_from_jwt.
+_jwks_client = PyJWKClient(settings.supabase_jwks_url)
 
 
 def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> str:
     try:
-        return decode_user_id(creds.credentials, settings.supabase_jwt_secret)
+        signing_key = _jwks_client.get_signing_key_from_jwt(creds.credentials)
+        return decode_user_id(creds.credentials, signing_key.key, ["ES256"])
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -163,7 +199,7 @@ Expected: PASS (3 passed)
 
 ```bash
 git add backend/app/auth backend/app/config.py backend/requirements.txt backend/.env.example backend/tests
-git commit -m "feat(auth): validación de JWT de Supabase con get_current_user"
+git commit -m "feat(auth): validación de JWT de Supabase vía JWKS (ES256) con get_current_user"
 ```
 
 (No incluir `backend/.env` — está ignorado.)
