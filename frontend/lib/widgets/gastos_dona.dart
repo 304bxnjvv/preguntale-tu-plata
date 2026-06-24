@@ -15,6 +15,7 @@ class GastosDona extends StatelessWidget {
   Widget build(BuildContext context) {
     if (porBanco.isEmpty) return const SizedBox.shrink();
     final total = porBanco.fold<double>(0, (a, b) => a + b.total.abs());
+    if (total == 0) return const SizedBox.shrink();
     return SizedBox(
       height: 180,
       child: PieChart(
