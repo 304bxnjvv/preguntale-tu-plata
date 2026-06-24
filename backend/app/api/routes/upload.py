@@ -72,15 +72,16 @@ async def upload_universal(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    nuevas = insert_transactions(session, user_id, transacciones, fuente="cartola")
+    if nuevas:
+        indexar_transacciones(nuevas, user_id)
+    # El LLM ya se invocó (costo) → la subida cuenta contra el límite, haya o no transacciones.
+    log_upload(session, user_id, filename, len(nuevas))
+
     if not transacciones:
         raise HTTPException(
             status_code=422, detail="No detectamos transacciones en el archivo."
         )
-
-    nuevas = insert_transactions(session, user_id, transacciones, fuente="cartola")
-    if nuevas:
-        indexar_transacciones(nuevas, user_id)
-    log_upload(session, user_id, filename, len(nuevas))
 
     return UploadResponse(
         banco=transacciones[0].banco,
