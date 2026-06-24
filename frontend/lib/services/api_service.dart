@@ -67,10 +67,10 @@ class ApiService {
     throw ApiException('No se pudo procesar la pregunta', res.statusCode);
   }
 
-  Future<UploadResult> uploadCsv(Uint8List bytes, String filename, String banco) async {
+  Future<UploadResult> uploadFile(Uint8List bytes, String filename) async {
     final req = http.MultipartRequest(
       'POST',
-      Uri.parse('$baseUrl/transactions/upload-csv?banco=$banco'),
+      Uri.parse('$baseUrl/transactions/upload'),
     );
     req.headers.addAll(_headers());
     req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
