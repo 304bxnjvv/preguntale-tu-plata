@@ -17,6 +17,7 @@ sqlalchemy==2.0.35
 
 # CSV parsing
 pandas==2.2.3
+pdfplumber==0.11.4
 
 # Validation
 pydantic==2.10.3
