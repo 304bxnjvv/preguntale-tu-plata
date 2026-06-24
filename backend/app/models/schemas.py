@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import date
 from typing import Optional
 
@@ -48,6 +48,13 @@ class TransactionOut(BaseModel):
     fuente: str
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def _id_to_str(cls, v):
+        # En Postgres la columna id es UUID y psycopg2 devuelve un objeto UUID;
+        # en SQLite (tests) es texto. Normalizamos a str en ambos casos.
+        return str(v)
 
 
 class MonedaTotales(BaseModel):
