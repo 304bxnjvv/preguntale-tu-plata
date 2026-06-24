@@ -17,15 +17,17 @@ Transacciones relevantes:
 
 Pregunta: {question}
 
-Responde de forma clara y directa. Si calculas totales, muéstralos en formato $X.XXX CLP.
+Responde de forma clara y directa. Si calculas totales, SUMA PASO A PASO mostrando el
+acumulado parcial (ej: 45.000 + 12.500 = 57.500; 57.500 + 23.400 = 80.900; ...) y verifica
+el resultado antes de dar el total final. No redondees ni inventes montos. Formato: $X.XXX CLP.
 """)
 
 
 def _llm():
+    # OpenAI gpt-4o-mini (EE.UU., ofrece DPA) — antes DeepSeek (China).
     return ChatOpenAI(
-        model=settings.deepseek_model,
-        base_url="https://api.deepseek.com/v1",
-        api_key=settings.deepseek_api_key,
+        model=settings.llm_model,
+        api_key=settings.openai_api_key,
         temperature=0.1,
     )
 
