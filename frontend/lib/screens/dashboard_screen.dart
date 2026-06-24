@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/data_providers.dart';
 import '../models/summary.dart';
@@ -26,6 +27,24 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => Supabase.instance.client.auth.signOut(),
+          ),
+        ],
+      ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'subir',
+            onPressed: () => context.push('/upload'),
+            icon: const Icon(Icons.upload_file),
+            label: const Text('Subir'),
+          ),
+          const SizedBox(width: 12),
+          FloatingActionButton.extended(
+            heroTag: 'preguntar',
+            onPressed: () => context.push('/chat'),
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('Preguntar'),
           ),
         ],
       ),

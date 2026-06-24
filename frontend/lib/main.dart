@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config.dart';
+import 'router.dart';
 
-void main() {
-  runApp(const PreguntaleApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: Config.supabaseUrl,
+    // ignore: deprecated_member_use
+    anonKey: Config.supabaseAnonKey,
+  );
+  runApp(const ProviderScope(child: PreguntaleApp()));
 }
 
-class PreguntaleApp extends StatelessWidget {
+class PreguntaleApp extends ConsumerWidget {
   const PreguntaleApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    return MaterialApp.router(
       title: 'Pregúntale a tu plata',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -20,30 +30,10 @@ class PreguntaleApp extends StatelessWidget {
           surface: Color(0xFF161B22),
           primary: Color(0xFF00C896),
           onPrimary: Color(0xFF0D1117),
-          secondary: Color(0xFF238636),
-          onSurface: Color(0xFFE6EDF3),
         ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF161B22),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF30363D)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF30363D)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF00C896), width: 1.5),
-          ),
-          hintStyle: const TextStyle(color: Color(0xFF8B949E)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-        fontFamily: 'Roboto',
+        useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      routerConfig: router,
     );
   }
 }
