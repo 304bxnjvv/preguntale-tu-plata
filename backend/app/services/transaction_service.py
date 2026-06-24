@@ -106,6 +106,7 @@ def get_summary(session: Session, user_id: str) -> dict:
         session.query(Transaction.banco, func.sum(Transaction.monto))
         .filter(Transaction.user_id == user_id)
         .filter(Transaction.monto < 0)
+        .filter(Transaction.banco.isnot(None))
         .group_by(Transaction.banco)
         .all()
     )
