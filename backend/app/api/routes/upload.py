@@ -8,6 +8,8 @@ from app.rag.rag_service import indexar_transacciones
 from app.models.schemas import UploadResponse, TransactionOut, SummaryResponse
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
+from app.services.extraction_service import extract_from_file
+from app.services.upload_limit import check_limit, log_upload, UploadLimitError
 
 router = APIRouter()
 
@@ -49,6 +51,41 @@ async def upload_csv(
         banco=banco,
         transacciones_procesadas=len(nuevas),
         message=f"{len(nuevas)} transacciones nuevas indexadas ({len(transacciones) - len(nuevas)} duplicadas omitidas).",
+    )
+
+
+@router.post("/transactions/upload", response_model=UploadResponse, status_code=201)
+async def upload_universal(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    try:
+        check_limit(session, user_id)
+    except UploadLimitError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+    content = await file.read()
+    filename = file.filename or "archivo"
+    try:
+        transacciones = extract_from_file(content, filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not transacciones:
+        raise HTTPException(
+            status_code=422, detail="No detectamos transacciones en el archivo."
+        )
+
+    nuevas = insert_transactions(session, user_id, transacciones, fuente="cartola")
+    if nuevas:
+        indexar_transacciones(nuevas, user_id)
+    log_upload(session, user_id, filename, len(nuevas))
+
+    return UploadResponse(
+        banco=transacciones[0].banco,
+        transacciones_procesadas=len(nuevas),
+        message=f"{len(nuevas)} transacciones nuevas ({len(transacciones) - len(nuevas)} duplicadas).",
     )
 
 
