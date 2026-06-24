@@ -30,7 +30,7 @@ def _llm():
     )
 
 
-def _transaccion_to_document(t: Transaccion) -> Document:
+def _transaccion_to_document(t: Transaccion, user_id: str) -> Document:
     tipo_str = "gasto" if t.monto < 0 else "ingreso"
     monto_abs = abs(t.monto)
     categoria = f" Categoría: {t.categoria}." if t.categoria else ""
@@ -41,6 +41,7 @@ def _transaccion_to_document(t: Transaccion) -> Document:
     return Document(
         page_content=content,
         metadata={
+            "user_id": user_id,
             "fecha": str(t.fecha),
             "monto": t.monto,
             "descripcion": t.descripcion,
@@ -49,8 +50,8 @@ def _transaccion_to_document(t: Transaccion) -> Document:
     )
 
 
-def indexar_transacciones(transacciones: list[Transaccion]) -> int:
-    docs = [_transaccion_to_document(t) for t in transacciones]
+def indexar_transacciones(transacciones: list[Transaccion], user_id: str) -> int:
+    docs = [_transaccion_to_document(t, user_id) for t in transacciones]
     vs = get_vector_store()
     vs.add_documents(docs)
     return len(docs)

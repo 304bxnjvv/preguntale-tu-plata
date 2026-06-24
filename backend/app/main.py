@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(upload.router, prefix="/api/v1", tags=["upload"])
+app.include_router(upload.router, prefix="/api/v1", tags=["transactions"])
 app.include_router(ask.router, prefix="/api/v1", tags=["ask"])
 
 
