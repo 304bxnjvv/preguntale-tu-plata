@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from app.parsers.bci_parser import BciParser
 from app.parsers.santander_parser import SantanderParser
@@ -55,8 +55,8 @@ async def upload_csv(
 @router.get("/transactions", response_model=list[TransactionOut])
 async def listar_transacciones(
     banco: str | None = None,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
