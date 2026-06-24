@@ -10,6 +10,8 @@ class Transaccion(BaseModel):
     tipo: str             # "cargo" | "abono"
     categoria: Optional[str] = None
     banco: str
+    moneda: str = "CLP"
+    tarjeta: Optional[str] = None
 
 
 class AskRequest(BaseModel):
