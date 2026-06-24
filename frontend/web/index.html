@@ -29,8 +29,12 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>preguntale_tu_plata</title>
+  <title>Pregúntale a tu plata</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Passkeys Web SDK requerido por supabase_flutter en web (no usamos passkeys,
+       pero su init lo exige). Hospedado localmente para evitar dependencia externa. -->
+  <script src="passkeys_bundle.js"></script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
