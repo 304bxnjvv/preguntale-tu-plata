@@ -157,6 +157,54 @@ class EditarCategoriaOut(BaseModel):
     actualizadas: int
 
 
+class PresupuestoIn(BaseModel):
+    categoria: str
+    monto_tope: float
+
+
+class PresupuestoEstadoOut(BaseModel):
+    categoria: str
+    monto_tope: float
+    gastado: float
+    pct: float
+    estado: str  # "ok" | "cerca" | "excedido"
+
+
+class PresupuestosResponse(BaseModel):
+    items: list[PresupuestoEstadoOut]
+
+
+class OkResponse(BaseModel):
+    ok: bool
+
+
+class MetaIn(BaseModel):
+    nombre: str
+    monto_objetivo: float
+    fecha_objetivo: Optional[str] = None  # YYYY-MM-DD
+
+
+class MetaPatchIn(BaseModel):
+    nombre: Optional[str] = None
+    monto_objetivo: Optional[float] = None
+    monto_actual: Optional[float] = None
+    fecha_objetivo: Optional[str] = None  # YYYY-MM-DD
+
+
+class MetaOut(BaseModel):
+    id: str
+    nombre: str
+    monto_objetivo: float
+    monto_actual: float
+    fecha_objetivo: Optional[str]
+    progreso: float
+    aporte_mensual_necesario: Optional[float]
+
+
+class MetasResponse(BaseModel):
+    items: list[MetaOut]
+
+
 class TarjetaEstadoResponse(BaseModel):
     tiene_datos: bool
     total_a_pagar: float
