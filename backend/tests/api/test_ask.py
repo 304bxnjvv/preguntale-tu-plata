@@ -14,7 +14,7 @@ from app.models.schemas import AskResponse
 def client(monkeypatch):
     captured = {}
 
-    def _fake_ask(question, user_id, history=None):
+    def _fake_ask(question, user_id, history=None, session=None):
         captured["user_id"] = user_id
         captured["question"] = question
         captured["history"] = history

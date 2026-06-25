@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import upload, ask
+from app.api.routes import upload, ask, insights
 
 app = FastAPI(
     title="Pregúntale a tu plata API",
@@ -17,6 +17,7 @@ app.add_middleware(
 
 app.include_router(upload.router, prefix="/api/v1", tags=["transactions"])
 app.include_router(ask.router, prefix="/api/v1", tags=["ask"])
+app.include_router(insights.router, prefix="/api/v1", tags=["insights"])
 
 
 @app.get("/health")

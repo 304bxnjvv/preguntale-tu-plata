@@ -29,7 +29,7 @@ async def preguntar(
     # Call RAG with history context. On failure, delete the just-saved user row
     # so no orphan is left in the DB, then surface a 502 to the caller.
     try:
-        result = ask(body.question, user_id, history)
+        result = ask(body.question, user_id, history, session=session)
     except Exception:
         delete_message(session, user_msg.id)
         raise HTTPException(

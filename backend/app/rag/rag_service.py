@@ -1,25 +1,30 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
+from sqlalchemy.orm import Session
 from app.config import settings
 from app.rag.vector_store import get_vector_store
 from app.models.schemas import Transaccion, AskResponse, TransaccionCitada
 
 
 PROMPT = ChatPromptTemplate.from_template("""
-Eres un asistente financiero personal para usuarios chilenos.
-Responde en español, con montos en pesos chilenos (CLP).
-Basa tu respuesta ÚNICAMENTE en las transacciones del contexto.
-Si no hay información suficiente, dilo claramente.
+eres el asistente de finanzas personales de confianza del usuario — chileno, cálido, directo y sin juicio.
+habla en minúscula relajada, usa "plata" en vez de "dinero", tutea al usuario y ve al grano.
+sé proactivo: si ves algo relevante en los datos (una suscripción cara, un mes peor que el anterior), menciónalo sin que te lo pidan.
+cuando cites montos, usa los números reales del contexto — nunca inventes ni redondees.
+si no hay datos suficientes, dilo sin rodeos.
 {history_block}
+Resumen del usuario:
+{resumen_block}
+
 Transacciones relevantes:
 {context}
 
 Pregunta: {question}
 
-Responde de forma clara y directa. Si calculas totales, SUMA PASO A PASO mostrando el
-acumulado parcial (ej: 45.000 + 12.500 = 57.500; 57.500 + 23.400 = 80.900; ...) y verifica
-el resultado antes de dar el total final. No redondees ni inventes montos. Formato: $X.XXX CLP.
+si calculas totales, SUMA PASO A PASO mostrando el acumulado parcial
+(ej: 45.000 + 12.500 = 57.500; 57.500 + 23.400 = 80.900; ...) y verifica el resultado antes de dar el total final.
+no redondees ni inventes montos. formato: $X.XXX CLP.
 """)
 
 
@@ -78,10 +83,53 @@ def _build_history_block(history: list[tuple[str, str]] | None) -> str:
     return f"\nConversación previa:\n{lines}"
 
 
+def _build_resumen_block(session: Session | None, user_id: str) -> str:
+    """Build the 'Resumen del usuario' block with insights data.
+
+    Returns an empty string when no session is provided (e.g. unit tests that
+    stub the LLM without a DB).
+    """
+    if session is None:
+        return ""
+    try:
+        from app.services.insights_service import (
+            comparativo_mensual,
+            detectar_suscripciones,
+        )
+        comp = comparativo_mensual(session, user_id)
+        sus = detectar_suscripciones(session, user_id)
+
+        lines = [
+            f"- Mes actual ({comp['mes_actual']}): gastos ${comp['gastos_actual']:,.0f} CLP",
+            f"- Mes anterior ({comp['mes_anterior']}): gastos ${comp['gastos_anterior']:,.0f} CLP",
+            f"- Delta: {'+' if comp['delta'] >= 0 else ''}{comp['delta']:,.0f} CLP",
+        ]
+        if comp["top_cambios"]:
+            cambios_str = ", ".join(
+                f"{c['categoria']} {'+' if c['delta'] >= 0 else ''}{c['delta']:,.0f}"
+                for c in comp["top_cambios"]
+            )
+            lines.append(f"- Top cambios por categoría: {cambios_str}")
+        if sus["items"]:
+            sus_str = ", ".join(
+                f"{i['descripcion']} ${i['monto']:,.0f}" for i in sus["items"]
+            )
+            lines.append(
+                f"- Suscripciones detectadas (total ~${sus['total_mensual']:,.0f}/mes): {sus_str}"
+            )
+        else:
+            lines.append("- Sin suscripciones detectadas este mes.")
+
+        return "\n".join(lines)
+    except Exception:
+        return ""
+
+
 def ask(
     question: str,
     user_id: str,
     history: list[tuple[str, str]] | None = None,
+    session: Session | None = None,
 ) -> AskResponse:
     vs = get_vector_store()
     docs = vs.similarity_search(
@@ -90,9 +138,15 @@ def ask(
 
     context = "\n".join(f"- {d.page_content}" for d in docs)
     history_block = _build_history_block(history)
+    resumen_block = _build_resumen_block(session, user_id)
     chain = PROMPT | _llm()
     answer = chain.invoke(
-        {"context": context, "question": question, "history_block": history_block}
+        {
+            "context": context,
+            "question": question,
+            "history_block": history_block,
+            "resumen_block": resumen_block,
+        }
     )
 
     citations = [

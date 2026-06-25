@@ -189,7 +189,7 @@ def api_client(monkeypatch):
         finally:
             s.close()
 
-    def _fake_ask(question, user_id, history=None):
+    def _fake_ask(question, user_id, history=None, session=None):
         return AskResponse(answer="respuesta-mock", citations=[])
 
     monkeypatch.setattr("app.api.routes.ask.ask", _fake_ask)

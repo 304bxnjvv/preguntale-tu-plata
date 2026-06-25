@@ -90,3 +90,28 @@ class ChatMessageOut(BaseModel):
     @classmethod
     def _id_to_str(cls, v):
         return str(v)
+
+
+class SuscripcionItem(BaseModel):
+    descripcion: str
+    monto: float
+    categoria: str
+
+
+class SuscripcionesResponse(BaseModel):
+    total_mensual: float
+    items: list[SuscripcionItem]
+
+
+class TopCambio(BaseModel):
+    categoria: str
+    delta: float
+
+
+class ComparativoResponse(BaseModel):
+    mes_actual: str
+    mes_anterior: str
+    gastos_actual: float
+    gastos_anterior: float
+    delta: float
+    top_cambios: list[TopCambio]
