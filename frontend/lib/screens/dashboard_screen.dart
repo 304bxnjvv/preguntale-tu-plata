@@ -75,8 +75,6 @@ class DashboardScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
-            const _FilterBar(),
-            const SizedBox(height: 16),
             summary.when(
               loading: () => const Center(
                 child: Padding(
@@ -90,7 +88,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
               data: (s) => _Resumen(s: s),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
+            const _FilterBar(),
+            const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
