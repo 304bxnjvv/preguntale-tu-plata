@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, Numeric, Date, DateTime, Integer, UniqueConstraint
+from sqlalchemy import Column, String, Text, Numeric, Date, DateTime, Integer, Boolean, UniqueConstraint
 from app.db.base import Base
 
 
@@ -16,6 +16,7 @@ class Transaction(Base):
     tarjeta = Column(String, nullable=True)
     tipo = Column(String, nullable=False)
     categoria = Column(String, nullable=True)
+    categoria_manual = Column(Boolean, nullable=False, default=False)
     banco = Column(String, nullable=False)
     fuente = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -66,3 +67,15 @@ class TarjetaEstado(Base):
     cuotas = Column(Text, nullable=False, default="[]")  # JSON string
     comprometido_proximo_mes = Column(Numeric, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class CategoriaOverride(Base):
+    __tablename__ = "categoria_overrides"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, index=True)
+    comercio_key = Column(String, nullable=False)
+    categoria = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (UniqueConstraint("user_id", "comercio_key", name="uq_override_user_key"),)
