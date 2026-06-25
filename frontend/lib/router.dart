@@ -12,6 +12,7 @@ import 'screens/paywall_screen.dart';
 import 'screens/consent_screen.dart';
 import 'screens/presupuestos_screen.dart';
 import 'screens/metas_screen.dart';
+import 'screens/alertas_screen.dart';
 
 /// Función pura: dado el estado de sesión y la ubicación actual, devuelve la
 /// ruta a la que redirigir, o null si no hay que redirigir.
@@ -41,6 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/suscripcion/consentimiento', builder: (_, __) => const ConsentScreen()),
       GoRoute(path: '/presupuestos', builder: (_, __) => const PresupuestosScreen()),
       GoRoute(path: '/metas', builder: (_, __) => const MetasScreen()),
+      GoRoute(path: '/alertas', builder: (_, __) => const AlertasScreen()),
     ],
   );
 });

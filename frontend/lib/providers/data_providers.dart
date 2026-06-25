@@ -10,6 +10,7 @@ import '../models/finscore.dart';
 import '../models/tarjeta.dart';
 import '../models/presupuesto.dart';
 import '../models/meta.dart';
+import '../models/alerta.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 export '../services/api_service.dart' show Subscription;
@@ -17,6 +18,7 @@ export '../models/finscore.dart' show FinScore, FinFactor;
 export '../models/tarjeta.dart' show TarjetaEstado, Cuota;
 export '../models/presupuesto.dart' show PresupuestoEstado;
 export '../models/meta.dart' show Meta;
+export '../models/alerta.dart' show Alerta;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -64,4 +66,8 @@ final presupuestosProvider = FutureProvider<List<PresupuestoEstado>>((ref) {
 
 final metasProvider = FutureProvider<List<Meta>>((ref) {
   return ref.watch(apiProvider).getMetas();
+});
+
+final alertasProvider = FutureProvider<List<Alerta>>((ref) {
+  return ref.watch(apiProvider).getAlertas();
 });

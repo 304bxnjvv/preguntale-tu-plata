@@ -10,6 +10,7 @@ import '../models/finscore.dart';
 import '../models/tarjeta.dart';
 import '../models/presupuesto.dart';
 import '../models/meta.dart';
+import '../models/alerta.dart';
 
 class Subscription {
   final String estado;
@@ -330,6 +331,21 @@ class ApiService {
       return (jsonDecode(utf8.decode(res.bodyBytes))['ok'] as bool);
     }
     throw ApiException('No se pudo eliminar la meta', res.statusCode);
+  }
+
+  // ── Alertas ─────────────────────────────────────────────────────────────────
+
+  Future<List<Alerta>> getAlertas() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/alertas'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      final list = j['items'] as List;
+      return list.map((e) => Alerta.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    throw ApiException('No se pudieron cargar las alertas', res.statusCode);
   }
 
   Future<int> editarCategoria(String id, String categoria) async {

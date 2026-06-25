@@ -14,6 +14,7 @@ import '../widgets/finscore_card.dart';
 import '../widgets/tarjeta_card.dart';
 import '../widgets/presupuesto_card.dart';
 import '../widgets/meta_card.dart';
+import '../services/alertas_seen.dart';
 
 void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(summaryProvider);
@@ -24,6 +25,7 @@ void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(tarjetaProvider);
   ref.invalidate(presupuestosProvider);
   ref.invalidate(metasProvider);
+  ref.invalidate(alertasProvider);
 }
 
 class DashboardScreen extends ConsumerWidget {
@@ -52,6 +54,7 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          _BellButton(onNavigated: () => _refrescarDatos(ref)),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: AppColors.textMuted, size: 20),
             tooltip: 'Ajustes',
@@ -107,6 +110,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(tarjetaProvider);
           ref.invalidate(presupuestosProvider);
           ref.invalidate(metasProvider);
+          ref.invalidate(alertasProvider);
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
@@ -583,6 +587,85 @@ class _ErrorBox extends StatelessWidget {
           ],
         ),
       );
+}
+
+// ── Bell button con badge ─────────────────────────────────────────────────────
+
+/// Campana en el AppBar con badge que muestra alertas no vistas.
+/// Al tocar navega a /alertas y marca todas como vistas.
+class _BellButton extends ConsumerStatefulWidget {
+  final VoidCallback onNavigated;
+  const _BellButton({required this.onNavigated});
+
+  @override
+  ConsumerState<_BellButton> createState() => _BellButtonState();
+}
+
+class _BellButtonState extends ConsumerState<_BellButton> {
+  final _seen = AlertasSeen();
+  Set<String> _seenKeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeen();
+  }
+
+  Future<void> _loadSeen() async {
+    final keys = await _seen.seenKeys();
+    if (mounted) setState(() => _seenKeys = keys);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final alertas = ref.watch(alertasProvider);
+    final unseen = alertas.whenOrNull(
+      data: (list) => list.where((a) => !_seenKeys.contains(a.key)).length,
+    ) ?? 0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: AppColors.textMuted, size: 20),
+          tooltip: 'Alertas',
+          onPressed: () async {
+            await context.push('/alertas');
+            // Marcar todas las alertas actuales como vistas
+            final list = alertas.valueOrNull;
+            if (list != null && list.isNotEmpty) {
+              await _seen.markSeen(list.map((a) => a.key));
+              await _loadSeen();
+            }
+            widget.onNavigated();
+          },
+        ),
+        if (unseen > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: AppColors.negative,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text(
+                '$unseen',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onPrimary,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 // ── Subscription banner ───────────────────────────────────────────────────────
