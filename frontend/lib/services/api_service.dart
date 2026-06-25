@@ -11,6 +11,7 @@ import '../models/tarjeta.dart';
 import '../models/presupuesto.dart';
 import '../models/meta.dart';
 import '../models/alerta.dart';
+import '../models/resumen_semanal.dart';
 
 class Subscription {
   final String estado;
@@ -334,6 +335,17 @@ class ApiService {
   }
 
   // ── Alertas ─────────────────────────────────────────────────────────────────
+
+  Future<ResumenSemanal> getResumenSemanal() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/resumen-semanal'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return ResumenSemanal.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo cargar el resumen semanal', res.statusCode);
+  }
 
   Future<List<Alerta>> getAlertas() async {
     final res = await _client.get(

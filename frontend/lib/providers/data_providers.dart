@@ -11,6 +11,7 @@ import '../models/tarjeta.dart';
 import '../models/presupuesto.dart';
 import '../models/meta.dart';
 import '../models/alerta.dart';
+import '../models/resumen_semanal.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 export '../services/api_service.dart' show Subscription;
@@ -19,6 +20,7 @@ export '../models/tarjeta.dart' show TarjetaEstado, Cuota;
 export '../models/presupuesto.dart' show PresupuestoEstado;
 export '../models/meta.dart' show Meta;
 export '../models/alerta.dart' show Alerta;
+export '../models/resumen_semanal.dart' show ResumenSemanal;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -70,4 +72,8 @@ final metasProvider = FutureProvider<List<Meta>>((ref) {
 
 final alertasProvider = FutureProvider<List<Alerta>>((ref) {
   return ref.watch(apiProvider).getAlertas();
+});
+
+final resumenSemanalProvider = FutureProvider<ResumenSemanal>((ref) {
+  return ref.watch(apiProvider).getResumenSemanal();
 });

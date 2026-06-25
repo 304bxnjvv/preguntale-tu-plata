@@ -15,6 +15,7 @@ import '../widgets/finscore_card.dart';
 import '../widgets/tarjeta_card.dart';
 import '../widgets/presupuesto_card.dart';
 import '../widgets/meta_card.dart';
+import '../widgets/resumen_semanal_card.dart';
 import '../services/alertas_seen.dart';
 import '../services/notif_service.dart';
 
@@ -28,6 +29,7 @@ void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(presupuestosProvider);
   ref.invalidate(metasProvider);
   ref.invalidate(alertasProvider);
+  ref.invalidate(resumenSemanalProvider);
 }
 
 class DashboardScreen extends ConsumerWidget {
@@ -127,6 +129,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(presupuestosProvider);
           ref.invalidate(metasProvider);
           ref.invalidate(alertasProvider);
+          ref.invalidate(resumenSemanalProvider);
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
@@ -167,6 +170,8 @@ class DashboardScreen extends ConsumerWidget {
             ),
             // Tarjeta de crédito — hidden when tiene_datos == false
             const TarjetaCard(),
+            // Resumen semanal — card descartable, se oculta tras 7 días
+            const ResumenSemanalCard(),
             // Presupuestos — resumen rápido, navega a /presupuestos
             const PresupuestoCard(),
             // Metas — resumen rápido, navega a /metas
