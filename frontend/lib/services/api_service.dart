@@ -8,6 +8,8 @@ import '../models/summary.dart';
 import '../models/insights.dart';
 import '../models/finscore.dart';
 import '../models/tarjeta.dart';
+import '../models/presupuesto.dart';
+import '../models/meta.dart';
 
 class Subscription {
   final String estado;
@@ -223,6 +225,111 @@ class ApiService {
     if (res.statusCode != 200) {
       throw ApiException('No se pudo eliminar los datos', res.statusCode);
     }
+  }
+
+  // ── Presupuestos ────────────────────────────────────────────────────────────
+
+  Future<List<PresupuestoEstado>> getPresupuestos() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/presupuestos'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      final list = j['items'] as List;
+      return list.map((e) => PresupuestoEstado.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    throw ApiException('No se pudieron cargar los presupuestos', res.statusCode);
+  }
+
+  Future<PresupuestoEstado> setTope(String categoria, num montoTope) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/presupuestos'),
+      headers: _headers({'Content-Type': 'application/json; charset=utf-8'}),
+      body: jsonEncode({'categoria': categoria, 'monto_tope': montoTope}),
+    );
+    if (res.statusCode == 200) {
+      return PresupuestoEstado.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo fijar el tope', res.statusCode);
+  }
+
+  Future<bool> deleteTope(String categoria) async {
+    final res = await _client.delete(
+      Uri.parse('$baseUrl/presupuestos/$categoria'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return (jsonDecode(utf8.decode(res.bodyBytes))['ok'] as bool);
+    }
+    throw ApiException('No se pudo eliminar el tope', res.statusCode);
+  }
+
+  // ── Metas ───────────────────────────────────────────────────────────────────
+
+  Future<List<Meta>> getMetas() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/metas'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      final list = j['items'] as List;
+      return list.map((e) => Meta.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    throw ApiException('No se pudieron cargar las metas', res.statusCode);
+  }
+
+  Future<Meta> crearMeta(String nombre, num montoObjetivo, {String? fechaObjetivo}) async {
+    final body = <String, dynamic>{
+      'nombre': nombre,
+      'monto_objetivo': montoObjetivo,
+      if (fechaObjetivo != null) 'fecha_objetivo': fechaObjetivo,
+    };
+    final res = await _client.post(
+      Uri.parse('$baseUrl/metas'),
+      headers: _headers({'Content-Type': 'application/json; charset=utf-8'}),
+      body: jsonEncode(body),
+    );
+    if (res.statusCode == 200) {
+      return Meta.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo crear la meta', res.statusCode);
+  }
+
+  Future<Meta> actualizarMeta(
+    String id, {
+    String? nombre,
+    num? montoObjetivo,
+    num? montoActual,
+    String? fechaObjetivo,
+  }) async {
+    final body = <String, dynamic>{
+      if (nombre != null) 'nombre': nombre,
+      if (montoObjetivo != null) 'monto_objetivo': montoObjetivo,
+      if (montoActual != null) 'monto_actual': montoActual,
+      if (fechaObjetivo != null) 'fecha_objetivo': fechaObjetivo,
+    };
+    final res = await _client.patch(
+      Uri.parse('$baseUrl/metas/$id'),
+      headers: _headers({'Content-Type': 'application/json; charset=utf-8'}),
+      body: jsonEncode(body),
+    );
+    if (res.statusCode == 200) {
+      return Meta.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo actualizar la meta', res.statusCode);
+  }
+
+  Future<bool> eliminarMeta(String id) async {
+    final res = await _client.delete(
+      Uri.parse('$baseUrl/metas/$id'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return (jsonDecode(utf8.decode(res.bodyBytes))['ok'] as bool);
+    }
+    throw ApiException('No se pudo eliminar la meta', res.statusCode);
   }
 
   Future<int> editarCategoria(String id, String categoria) async {

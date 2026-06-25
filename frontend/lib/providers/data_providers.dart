@@ -8,11 +8,15 @@ import '../models/dashboard_filter.dart';
 import '../models/insights.dart';
 import '../models/finscore.dart';
 import '../models/tarjeta.dart';
+import '../models/presupuesto.dart';
+import '../models/meta.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 export '../services/api_service.dart' show Subscription;
 export '../models/finscore.dart' show FinScore, FinFactor;
 export '../models/tarjeta.dart' show TarjetaEstado, Cuota;
+export '../models/presupuesto.dart' show PresupuestoEstado;
+export '../models/meta.dart' show Meta;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -52,4 +56,12 @@ final finScoreProvider = FutureProvider<FinScore>((ref) {
 
 final tarjetaProvider = FutureProvider<TarjetaEstado>((ref) {
   return ref.watch(apiProvider).getTarjeta();
+});
+
+final presupuestosProvider = FutureProvider<List<PresupuestoEstado>>((ref) {
+  return ref.watch(apiProvider).getPresupuestos();
+});
+
+final metasProvider = FutureProvider<List<Meta>>((ref) {
+  return ref.watch(apiProvider).getMetas();
 });
