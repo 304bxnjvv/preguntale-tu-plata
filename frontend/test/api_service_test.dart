@@ -57,4 +57,36 @@ void main() {
     expect(r.answer, 'Gastaste 45000');
     expect(r.citations.single.monto, -45000.0);
   });
+
+  test('getChatHistory parsea array de mensajes', () async {
+    late http.Request captured;
+    final mock = MockClient((req) async {
+      captured = req;
+      return http.Response(
+        jsonEncode([
+          {'id': 'u1', 'role': 'user', 'content': 'cuanto gaste', 'created_at': '2025-06-01T10:00:00Z'},
+          {'id': 'a1', 'role': 'assistant', 'content': 'Gastaste 45000', 'created_at': '2025-06-01T10:00:01Z'},
+        ]),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    });
+    final api = ApiService(client: mock, token: () => 'TOKEN123', baseUrl: 'http://x/api/v1');
+
+    final history = await api.getChatHistory();
+
+    expect(captured.headers['Authorization'], 'Bearer TOKEN123');
+    expect(captured.url.path, endsWith('/chat/history'));
+    expect(history.length, 2);
+    expect(history[0].role, 'user');
+    expect(history[0].content, 'cuanto gaste');
+    expect(history[1].role, 'assistant');
+    expect(history[1].content, 'Gastaste 45000');
+  });
+
+  test('getChatHistory lanza ApiException en error', () async {
+    final mock = MockClient((req) async => http.Response('Unauthorized', 401));
+    final api = ApiService(client: mock, token: () => 't', baseUrl: 'http://x/api/v1');
+    expect(() => api.getChatHistory(), throwsA(isA<ApiException>()));
+  });
 }

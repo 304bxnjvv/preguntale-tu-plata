@@ -21,6 +21,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _input = TextEditingController();
   final _msgs = <_Msg>[];
   bool _cargando = false;
+  bool _historyLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHistory());
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final history = await ref.read(chatHistoryProvider.future);
+      if (mounted) {
+        setState(() {
+          _msgs.addAll(history.map((m) => _Msg(m.content, m.role == 'user')));
+          _historyLoaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _historyLoaded = true);
+    }
+  }
 
   Future<void> _enviar() async {
     final q = _input.text.trim();
@@ -64,19 +85,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _msgs.isEmpty
-                ? _EmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: _msgs.length + (_cargando ? 1 : 0),
-                    itemBuilder: (_, i) {
-                      if (_cargando && i == _msgs.length) {
-                        return _ThinkingBubble();
-                      }
-                      final m = _msgs[i];
-                      return m.user ? _UserBubble(m.text) : _AiBubble(m.text);
-                    },
-                  ),
+            child: !_historyLoaded
+                ? const Center(child: Orb(size: 48, thinking: true))
+                : _msgs.isEmpty
+                    ? _EmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: _msgs.length + (_cargando ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          if (_cargando && i == _msgs.length) {
+                            return _ThinkingBubble();
+                          }
+                          final m = _msgs[i];
+                          return m.user ? _UserBubble(m.text) : _AiBubble(m.text);
+                        },
+                      ),
           ),
           _InputBar(controller: _input, cargando: _cargando, onEnviar: _enviar),
         ],

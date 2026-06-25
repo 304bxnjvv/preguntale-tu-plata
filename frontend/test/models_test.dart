@@ -1,8 +1,31 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:preguntale_tu_plata/models/chat_message.dart';
 import 'package:preguntale_tu_plata/models/transaction.dart';
 import 'package:preguntale_tu_plata/models/summary.dart';
 
 void main() {
+  test('ChatMessage.fromJson parsea role y content', () {
+    final m = ChatMessage.fromJson({
+      'id': 'abc',
+      'role': 'user',
+      'content': 'cuanto gaste este mes',
+      'created_at': '2025-06-01T10:00:00Z',
+    });
+    expect(m.role, 'user');
+    expect(m.content, 'cuanto gaste este mes');
+  });
+
+  test('ChatMessage.fromJson parsea role assistant', () {
+    final m = ChatMessage.fromJson({
+      'id': 'xyz',
+      'role': 'assistant',
+      'content': 'Gastaste 45000',
+      'created_at': '2025-06-01T10:00:01Z',
+    });
+    expect(m.role, 'assistant');
+    expect(m.content, 'Gastaste 45000');
+  });
+
   test('Transaction.fromJson parsea campos', () {
     final t = Transaction.fromJson({
       'id': 'abc', 'fecha': '2025-06-01', 'descripcion': 'LIDER',

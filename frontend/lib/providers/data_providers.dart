@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_service.dart';
+import '../models/chat_message.dart';
 import '../models/summary.dart';
 import '../models/transaction.dart';
 
@@ -16,4 +17,8 @@ final summaryProvider = FutureProvider<Summary>((ref) {
 
 final transactionsProvider = FutureProvider<List<Transaction>>((ref) {
   return ref.watch(apiProvider).getTransactions();
+});
+
+final chatHistoryProvider = FutureProvider<List<ChatMessage>>((ref) {
+  return ref.watch(apiProvider).getChatHistory();
 });

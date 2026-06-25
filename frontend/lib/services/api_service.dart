@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../config.dart';
+import '../models/chat_message.dart';
 import '../models/transaction.dart';
 import '../models/summary.dart';
 
@@ -43,6 +44,18 @@ class ApiService {
       return list.map((e) => Transaction.fromJson(e as Map<String, dynamic>)).toList();
     }
     throw ApiException('No se pudieron cargar las transacciones', res.statusCode);
+  }
+
+  Future<List<ChatMessage>> getChatHistory() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/chat/history'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      final list = jsonDecode(utf8.decode(res.bodyBytes)) as List;
+      return list.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    throw ApiException('No se pudo cargar el historial', res.statusCode);
   }
 
   Future<AskResult> ask(String question) async {
