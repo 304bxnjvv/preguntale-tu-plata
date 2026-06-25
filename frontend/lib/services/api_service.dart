@@ -13,6 +13,7 @@ import '../models/meta.dart';
 import '../models/alerta.dart';
 import '../models/resumen_semanal.dart';
 import '../models/forecast.dart';
+import '../models/boleta_draft.dart';
 
 class Subscription {
   final String estado;
@@ -398,6 +399,57 @@ class ApiService {
       return UploadResult(banco: j['banco'] as String, count: j['transacciones_procesadas'] as int);
     }
     throw ApiException(j['detail']?.toString() ?? 'Error al subir el archivo', streamed.statusCode);
+  }
+
+  // ── Boletas ──────────────────────────────────────────────────────────────────
+
+  /// Envía la imagen de una boleta como multipart y devuelve el draft extraído.
+  /// No guarda nada — el usuario confirma antes con [crearManual].
+  Future<BoletaDraft> escanearBoleta(Uint8List bytes, String filename) async {
+    final req = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/transactions/boleta'),
+    );
+    req.headers.addAll(_headers());
+    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final streamed = await _client.send(req);
+    final body = await streamed.stream.bytesToString();
+    final j = jsonDecode(body);
+    if (streamed.statusCode == 200) {
+      return BoletaDraft.fromJson(j as Map<String, dynamic>);
+    }
+    throw ApiException(
+      j['detail']?.toString() ?? 'No pudimos leer la boleta',
+      streamed.statusCode,
+    );
+  }
+
+  /// Guarda manualmente una transacción proveniente de boleta escaneada.
+  Future<void> crearManual({
+    required String comercio,
+    required double monto,
+    required String fecha,
+    required String categoria,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/transactions/manual'),
+      headers: _headers({'Content-Type': 'application/json; charset=utf-8'}),
+      body: jsonEncode({
+        'comercio': comercio,
+        'monto': monto,
+        'fecha': fecha,
+        'categoria': categoria,
+      }),
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) return;
+    String? detail;
+    try {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      detail = j['detail']?.toString();
+    } catch (_) {
+      detail = null;
+    }
+    throw ApiException(detail ?? 'No se pudo guardar el gasto', res.statusCode);
   }
 }
 
