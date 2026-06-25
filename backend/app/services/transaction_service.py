@@ -1,3 +1,4 @@
+from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.models import Transaction
@@ -69,45 +70,81 @@ def list_transactions(
     banco: str | None = None,
     limit: int = 100,
     offset: int = 0,
+    desde: date | None = None,
+    tipo: str | None = None,
 ) -> list[Transaction]:
     q = session.query(Transaction).filter(Transaction.user_id == user_id)
     if banco:
         q = q.filter(Transaction.banco == banco)
+    if desde is not None:
+        q = q.filter(Transaction.fecha >= desde)
+    if tipo == "ingreso":
+        q = q.filter(Transaction.monto >= 0)
+    elif tipo == "gasto":
+        q = q.filter(Transaction.monto < 0)
     return q.order_by(Transaction.fecha.desc()).limit(limit).offset(offset).all()
 
 
-def get_summary(session: Session, user_id: str) -> dict:
-    rows = (
-        session.query(
-            Transaction.moneda,
-            func.sum(Transaction.monto),
+def get_summary(
+    session: Session,
+    user_id: str,
+    desde: date | None = None,
+    tipo: str | None = None,
+) -> dict:
+    def _base(extra_filter=None):
+        q = (
+            session.query(Transaction.moneda, func.sum(Transaction.monto))
+            .filter(Transaction.user_id == user_id)
         )
-        .filter(Transaction.user_id == user_id)
-        .filter(Transaction.monto < 0)
+        if desde is not None:
+            q = q.filter(Transaction.fecha >= desde)
+        if extra_filter is not None:
+            q = q.filter(extra_filter)
+        return q
+
+    # por_moneda always splits both sides (gastos + ingresos), date-filtered
+    gastos_rows = (
+        _base(Transaction.monto < 0)
         .group_by(Transaction.moneda)
         .all()
     )
     ingresos_rows = (
-        session.query(Transaction.moneda, func.sum(Transaction.monto))
-        .filter(Transaction.user_id == user_id)
-        .filter(Transaction.monto >= 0)
+        _base(Transaction.monto >= 0)
         .group_by(Transaction.moneda)
         .all()
     )
 
     por_moneda: dict = {}
-    for moneda, total in rows:
+    for moneda, total in gastos_rows:
         por_moneda.setdefault(moneda, {"ingresos": 0.0, "gastos": 0.0})
         por_moneda[moneda]["gastos"] = float(total)
     for moneda, total in ingresos_rows:
         por_moneda.setdefault(moneda, {"ingresos": 0.0, "gastos": 0.0})
         por_moneda[moneda]["ingresos"] = float(total)
 
+    # per-banco and per-categoria: aggregate income side when tipo='ingreso',
+    # otherwise aggregate expense side (default behaviour).
+    if tipo == "ingreso":
+        side_filter = Transaction.monto >= 0
+    else:
+        side_filter = Transaction.monto < 0
+
+    def _base_side():
+        q = (
+            session.query(Transaction)
+            .filter(Transaction.user_id == user_id)
+            .filter(side_filter)
+        )
+        if desde is not None:
+            q = q.filter(Transaction.fecha >= desde)
+        return q
+
     cat_rows = (
         session.query(Transaction.categoria, func.sum(Transaction.monto))
         .filter(Transaction.user_id == user_id)
-        .filter(Transaction.monto < 0)
+        .filter(side_filter)
         .filter(Transaction.categoria.isnot(None))
+        .filter(Transaction.fecha >= desde if desde is not None else True)
         .group_by(Transaction.categoria)
         .all()
     )
@@ -118,8 +155,9 @@ def get_summary(session: Session, user_id: str) -> dict:
     banco_rows = (
         session.query(Transaction.banco, func.sum(Transaction.monto))
         .filter(Transaction.user_id == user_id)
-        .filter(Transaction.monto < 0)
+        .filter(side_filter)
         .filter(Transaction.banco.isnot(None))
+        .filter(Transaction.fecha >= desde if desde is not None else True)
         .group_by(Transaction.banco)
         .all()
     )

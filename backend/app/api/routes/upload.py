@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from app.parsers.bci_parser import BciParser
@@ -90,20 +91,33 @@ async def upload_universal(
     )
 
 
+_TIPO_VALUES = {"ingreso", "gasto"}
+
+
 @router.get("/transactions", response_model=list[TransactionOut])
 async def listar_transacciones(
     banco: str | None = None,
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
+    dias: int | None = Query(default=None, ge=1, le=366),
+    tipo: str | None = Query(default=None),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    return list_transactions(session, user_id, banco=banco, limit=limit, offset=offset)
+    if tipo is not None and tipo not in _TIPO_VALUES:
+        raise HTTPException(status_code=422, detail=f"tipo debe ser 'ingreso' o 'gasto', no '{tipo}'")
+    desde: date | None = date.today() - timedelta(days=dias) if dias is not None else None
+    return list_transactions(session, user_id, banco=banco, limit=limit, offset=offset, desde=desde, tipo=tipo)
 
 
 @router.get("/transactions/summary", response_model=SummaryResponse)
 async def resumen(
+    dias: int | None = Query(default=None, ge=1, le=366),
+    tipo: str | None = Query(default=None),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    return get_summary(session, user_id)
+    if tipo is not None and tipo not in _TIPO_VALUES:
+        raise HTTPException(status_code=422, detail=f"tipo debe ser 'ingreso' o 'gasto', no '{tipo}'")
+    desde: date | None = date.today() - timedelta(days=dias) if dias is not None else None
+    return get_summary(session, user_id, desde=desde, tipo=tipo)
