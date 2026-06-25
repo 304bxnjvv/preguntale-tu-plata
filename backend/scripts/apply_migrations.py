@@ -37,7 +37,8 @@ def _load_postgres_url() -> str:
 
 
 def apply(paths: list[str]) -> None:
-    url = _load_postgres_url()
+    # psycopg2 no entiende el esquema SQLAlchemy "postgresql+psycopg2://"
+    url = _load_postgres_url().replace("postgresql+psycopg2://", "postgresql://")
     conn = psycopg2.connect(url)
     try:
         for rel in paths:
