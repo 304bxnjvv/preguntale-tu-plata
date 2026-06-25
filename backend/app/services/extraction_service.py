@@ -1,5 +1,6 @@
 from datetime import date
 import io
+import re
 import base64
 import pdfplumber
 from pydantic import BaseModel
@@ -8,6 +9,22 @@ from langchain_core.messages import HumanMessage
 from app.config import settings
 from app.models.schemas import Transaccion
 from app.services.categorias import CATEGORIAS, categorizar_por_reglas, normalizar
+
+# ── RUT masking: matches formats like 12.345.678-9 or 12345678-K ─────────────
+_RUT_RE = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]\b")
+# ── Long digit runs (≥10 consecutive digits) → account/card numbers ──────────
+_ACCOUNT_RE = re.compile(r"\b\d{10,}\b")
+
+
+def _mask_sensitive(texto: str) -> str:
+    """
+    Redact Chilean RUTs and long digit strings (≥10 digits) from texto
+    before sending to OpenAI. Leaves monetary amounts like $45.000 intact
+    because those are not matched by the patterns above.
+    """
+    texto = _RUT_RE.sub("[RUT]", texto)
+    texto = _ACCOUNT_RE.sub("[CUENTA]", texto)
+    return texto
 
 
 class TxnExtraida(BaseModel):
@@ -69,7 +86,8 @@ def _map(t: TxnExtraida) -> Transaccion | None:
 def extract_from_text(texto: str) -> list[Transaccion]:
     if not texto.strip():
         return []
-    result = _extractor().invoke(_PROMPT.format(texto=texto[:30000]))
+    texto_safe = _mask_sensitive(texto[:30000])
+    result = _extractor().invoke(_PROMPT.format(texto=texto_safe))
     return [m for t in result.transacciones if (m := _map(t)) is not None]
 
 
