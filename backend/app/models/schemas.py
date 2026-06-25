@@ -237,3 +237,23 @@ class ResumenSemanalResponse(BaseModel):
     top_monto: float
     delta_pct: Optional[float]
     texto: str
+
+
+class CategoriaRiesgo(BaseModel):
+    categoria: str
+    tope: float
+    proyectado: float
+    pct: float
+
+
+class ForecastResponse(BaseModel):
+    tiene_datos: bool
+    dias_restantes: int
+    dia_del_mes: int
+    gasto_actual: float
+    gasto_proyectado: float
+    ingresos_mes: float
+    neto_proyectado: Optional[float]
+    categorias_en_riesgo: list[CategoriaRiesgo]
+    confianza: str
+    caveat: str

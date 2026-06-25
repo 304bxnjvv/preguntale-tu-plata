@@ -164,6 +164,23 @@ def _build_resumen_block(session: Session | None, user_id: str) -> str:
         except Exception:
             pass
 
+        # Inject forecast de fin de mes
+        try:
+            from app.services.forecast_service import proyectar_mes
+            fc = proyectar_mes(session, user_id)
+            if fc["tiene_datos"]:
+                from datetime import date as _date
+                hoy = _date.today()
+                mes_nombre = hoy.strftime("%B")
+                linea_fc = (
+                    f"- Proyección de {mes_nombre}: vas a gastar ~${fc['gasto_proyectado']:,.0f} CLP"
+                )
+                if fc["neto_proyectado"] is not None:
+                    linea_fc += f" (neto proyectado ${fc['neto_proyectado']:,.0f} CLP)"
+                lines.append(linea_fc)
+        except Exception:
+            pass
+
         return "\n".join(lines)
     except Exception:
         return ""
