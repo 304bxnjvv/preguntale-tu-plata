@@ -190,7 +190,18 @@ class DashboardScreen extends ConsumerWidget {
               ),
               data: (list) => list.isEmpty
                   ? const _EmptyState()
-                  : Column(children: [for (final t in list) TransactionTile(t: t)]),
+                  : Column(
+                      children: [
+                        for (final t in list)
+                          TransactionTile(
+                            t: t,
+                            onCategoriaChanged: () {
+                              ref.invalidate(summaryProvider);
+                              ref.invalidate(transactionsProvider);
+                            },
+                          ),
+                      ],
+                    ),
             ),
           ],
         ),

@@ -225,6 +225,18 @@ class ApiService {
     }
   }
 
+  Future<int> editarCategoria(String id, String categoria) async {
+    final res = await _client.patch(
+      Uri.parse('$baseUrl/transactions/$id'),
+      headers: _headers({'Content-Type': 'application/json; charset=utf-8'}),
+      body: jsonEncode({'categoria': categoria}),
+    );
+    if (res.statusCode == 200) {
+      return (jsonDecode(utf8.decode(res.bodyBytes))['actualizadas'] as num).toInt();
+    }
+    throw ApiException('No se pudo cambiar la categoría', res.statusCode);
+  }
+
   Future<UploadResult> uploadFile(Uint8List bytes, String filename) async {
     final req = http.MultipartRequest(
       'POST',
