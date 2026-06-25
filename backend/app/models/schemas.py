@@ -257,3 +257,22 @@ class ForecastResponse(BaseModel):
     categorias_en_riesgo: list[CategoriaRiesgo]
     confianza: str
     caveat: str
+
+
+class BoletaDraftOut(BaseModel):
+    comercio: str
+    monto: float
+    fecha: Optional[str]   # YYYY-MM-DD
+    categoria: str
+
+
+class ManualTxnIn(BaseModel):
+    comercio: str
+    monto: float
+    fecha: str             # YYYY-MM-DD
+    categoria: str
+
+
+class ManualTxnOut(BaseModel):
+    ok: bool
+    id: str

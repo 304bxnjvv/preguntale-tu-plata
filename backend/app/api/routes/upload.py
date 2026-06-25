@@ -12,10 +12,13 @@ from app.models.schemas import (
     SummaryResponse,
     EditarCategoriaIn,
     EditarCategoriaOut,
+    BoletaDraftOut,
+    ManualTxnIn,
+    ManualTxnOut,
 )
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
-from app.services.extraction_service import extract_from_file, extraer_estado_tarjeta
+from app.services.extraction_service import extract_from_file, extraer_estado_tarjeta, extraer_boleta
 from app.services.upload_limit import check_limit, log_upload, UploadLimitError
 from app.services.demo_service import clear_demo
 from app.services.tarjeta_service import guardar_estado
@@ -179,3 +182,73 @@ async def resumen(
         raise HTTPException(status_code=422, detail=f"tipo debe ser 'ingreso' o 'gasto', no '{tipo}'")
     desde: date | None = date.today() - timedelta(days=dias) if dias is not None else None
     return get_summary(session, user_id, desde=desde, tipo=tipo)
+
+
+@router.post("/transactions/boleta", response_model=BoletaDraftOut)
+async def draft_boleta(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Extrae datos de una foto de boleta SIN guardar. Cuenta contra el límite de subidas."""
+    try:
+        check_limit(session, user_id)
+    except UploadLimitError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+    content = await file.read()
+    filename = file.filename or "boleta.jpg"
+    ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else "jpg"
+
+    draft = extraer_boleta(content, ext)
+    # La llamada LLM ya ocurrió → registrar contra el límite independiente del resultado
+    log_upload(session, user_id, filename, 0, fuente="boleta")
+
+    if draft is None:
+        raise HTTPException(status_code=422, detail="No pudimos leer la boleta. Intenta con una foto más clara.")
+
+    return BoletaDraftOut(
+        comercio=draft["comercio"],
+        monto=draft["monto"],
+        fecha=draft.get("fecha"),
+        categoria=draft["categoria"],
+    )
+
+
+@router.post("/transactions/manual", response_model=ManualTxnOut, status_code=200)
+async def guardar_manual(
+    body: ManualTxnIn,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Guarda una transacción ingresada manualmente (ej. confirmación de boleta escaneada)."""
+    if body.categoria not in CATEGORIAS:
+        raise HTTPException(status_code=422, detail=f"Categoría inválida: '{body.categoria}'")
+
+    try:
+        fecha = date.fromisoformat(body.fecha)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Fecha inválida, usa formato YYYY-MM-DD")
+
+    from app.models.schemas import Transaccion as TransaccionSchema
+    txn_schema = TransaccionSchema(
+        fecha=fecha,
+        descripcion=body.comercio,
+        monto=body.monto,
+        tipo="cargo" if body.monto < 0 else "abono",
+        categoria=body.categoria,
+        banco="efectivo",
+        moneda="CLP",
+    )
+    nuevas = insert_transactions(session, user_id, [txn_schema], fuente="boleta")
+    indexar_transacciones(nuevas, user_id)
+
+    # Retrieve the saved transaction id
+    saved = (
+        session.query(Transaction)
+        .filter_by(user_id=user_id, descripcion=body.comercio, monto=body.monto)
+        .order_by(Transaction.created_at.desc())
+        .first()
+    )
+    txn_id = str(saved.id) if saved else ""
+    return ManualTxnOut(ok=True, id=txn_id)
