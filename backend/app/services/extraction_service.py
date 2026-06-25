@@ -128,6 +128,64 @@ def extract_from_file(content: bytes, filename: str) -> list[Transaccion]:
     raise ValueError(f"Tipo de archivo no soportado: .{ext}")
 
 
+# ── Boleta / receipt extraction ──────────────────────────────────────────────
+
+class BoletaExtraida(BaseModel):
+    es_boleta: bool
+    comercio: str = ""
+    monto: float = 0  # positivo como lo da el LLM; se fuerza negativo al devolver
+    fecha: str | None = None  # YYYY-MM-DD
+    categoria: str | None = None
+
+
+_CATEGORIAS_LIST_STR = ", ".join(CATEGORIAS)
+
+_PROMPT_BOLETA = (
+    "Eres un extractor de BOLETAS/recibos chilenos. "
+    "De la imagen extrae el TOTAL pagado (monto, positivo), el comercio, "
+    "la fecha (YYYY-MM-DD) y una categoría de ["
+    + _CATEGORIAS_LIST_STR
+    + "]. "
+    "Si no es una boleta legible, es_boleta=false."
+)
+
+
+def _extractor_boleta():
+    return ChatOpenAI(
+        model=settings.llm_model,
+        api_key=settings.openai_api_key,
+        temperature=0,
+    ).with_structured_output(BoletaExtraida)
+
+
+def extraer_boleta(content: bytes, ext: str) -> dict | None:
+    """Extract receipt data from an image using vision LLM.
+
+    Returns a dict {comercio, monto (negative = gasto), fecha, categoria}
+    or None if the image is not a legible receipt.
+    """
+    b64 = base64.b64encode(content).decode()
+    mime = "image/jpeg" if ext in ("jpg", "jpeg") else f"image/{ext}"
+    msg = HumanMessage(content=[
+        {"type": "text", "text": _PROMPT_BOLETA},
+        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+    ])
+    resultado: BoletaExtraida = _extractor_boleta().invoke([msg])
+    if not resultado.es_boleta:
+        return None
+    categoria = (
+        categorizar_por_reglas(resultado.comercio)
+        or normalizar(resultado.categoria)
+        or "Otros"
+    )
+    return {
+        "comercio": resultado.comercio,
+        "monto": -abs(resultado.monto),
+        "fecha": resultado.fecha,
+        "categoria": categoria,
+    }
+
+
 # ── Credit-card statement extraction ─────────────────────────────────────────
 
 class CuotaPendiente(BaseModel):
