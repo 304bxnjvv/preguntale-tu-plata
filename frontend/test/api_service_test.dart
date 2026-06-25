@@ -27,12 +27,64 @@ void main() {
     expect(s.porMoneda['CLP']!.gastos, -50.0);
   });
 
+  test('getSummary con dias y tipo agrega query params correctos', () async {
+    late http.Request captured;
+    final mock = MockClient((req) async {
+      captured = req;
+      return http.Response(
+        jsonEncode({
+          'por_moneda': {},
+          'gastos_por_categoria': [],
+          'gastos_por_banco': [],
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final api = ApiService(client: mock, token: () => 't', baseUrl: 'http://x/api/v1');
+
+    await api.getSummary(dias: 7, tipo: 'gasto');
+
+    expect(captured.url.queryParameters['dias'], '7');
+    expect(captured.url.queryParameters['tipo'], 'gasto');
+  });
+
+  test('getSummary sin params no agrega query string', () async {
+    late http.Request captured;
+    final mock = MockClient((req) async {
+      captured = req;
+      return http.Response(
+        jsonEncode({
+          'por_moneda': {},
+          'gastos_por_categoria': [],
+          'gastos_por_banco': [],
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final api = ApiService(client: mock, token: () => 't', baseUrl: 'http://x/api/v1');
+
+    await api.getSummary();
+
+    expect(captured.url.queryParameters, isEmpty);
+  });
+
   test('getTransactions parsea lista', () async {
     final mock = MockClient((req) async => http.Response(
           jsonEncode([
-            {'id': '1', 'fecha': '2025-06-01', 'descripcion': 'LIDER', 'monto': -45000.0,
-             'moneda': 'CLP', 'tarjeta': null, 'tipo': 'cargo', 'categoria': null,
-             'banco': 'BCI', 'fuente': 'cartola'}
+            {
+              'id': '1',
+              'fecha': '2025-06-01',
+              'descripcion': 'LIDER',
+              'monto': -45000.0,
+              'moneda': 'CLP',
+              'tarjeta': null,
+              'tipo': 'cargo',
+              'categoria': null,
+              'banco': 'BCI',
+              'fuente': 'cartola'
+            }
           ]),
           200,
           headers: {'content-type': 'application/json'},
@@ -43,11 +95,28 @@ void main() {
     expect(list.first.descripcion, 'LIDER');
   });
 
+  test('getTransactions con filtros agrega query params', () async {
+    late http.Request captured;
+    final mock = MockClient((req) async {
+      captured = req;
+      return http.Response(jsonEncode([]), 200,
+          headers: {'content-type': 'application/json'});
+    });
+    final api = ApiService(client: mock, token: () => 't', baseUrl: 'http://x/api/v1');
+
+    await api.getTransactions(dias: 15, tipo: 'ingreso');
+
+    expect(captured.url.queryParameters['dias'], '15');
+    expect(captured.url.queryParameters['tipo'], 'ingreso');
+  });
+
   test('ask parsea answer y citations', () async {
     final mock = MockClient((req) async => http.Response(
           jsonEncode({
             'answer': 'Gastaste 45000',
-            'citations': [{'fecha': '2025-06-01', 'descripcion': 'LIDER', 'monto': -45000.0}],
+            'citations': [
+              {'fecha': '2025-06-01', 'descripcion': 'LIDER', 'monto': -45000.0}
+            ],
           }),
           200,
           headers: {'content-type': 'application/json; charset=utf-8'},
@@ -64,8 +133,18 @@ void main() {
       captured = req;
       return http.Response(
         jsonEncode([
-          {'id': 'u1', 'role': 'user', 'content': 'cuanto gaste', 'created_at': '2025-06-01T10:00:00Z'},
-          {'id': 'a1', 'role': 'assistant', 'content': 'Gastaste 45000', 'created_at': '2025-06-01T10:00:01Z'},
+          {
+            'id': 'u1',
+            'role': 'user',
+            'content': 'cuanto gaste',
+            'created_at': '2025-06-01T10:00:00Z'
+          },
+          {
+            'id': 'a1',
+            'role': 'assistant',
+            'content': 'Gastaste 45000',
+            'created_at': '2025-06-01T10:00:01Z'
+          },
         ]),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},

@@ -23,22 +23,28 @@ class ApiService {
         if (extra != null) ...extra,
       };
 
-  Future<Summary> getSummary() async {
-    final res = await _client.get(
-      Uri.parse('$baseUrl/transactions/summary'),
-      headers: _headers(),
-    );
+  Future<Summary> getSummary({int? dias, String? tipo}) async {
+    final params = <String, String>{
+      if (dias != null) 'dias': '$dias',
+      if (tipo != null) 'tipo': tipo,
+    };
+    final uri = Uri.parse('$baseUrl/transactions/summary')
+        .replace(queryParameters: params.isNotEmpty ? params : null);
+    final res = await _client.get(uri, headers: _headers());
     if (res.statusCode == 200) {
       return Summary.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
     }
     throw ApiException('No se pudo cargar el resumen', res.statusCode);
   }
 
-  Future<List<Transaction>> getTransactions() async {
-    final res = await _client.get(
-      Uri.parse('$baseUrl/transactions'),
-      headers: _headers(),
-    );
+  Future<List<Transaction>> getTransactions({int? dias, String? tipo}) async {
+    final params = <String, String>{
+      if (dias != null) 'dias': '$dias',
+      if (tipo != null) 'tipo': tipo,
+    };
+    final uri = Uri.parse('$baseUrl/transactions')
+        .replace(queryParameters: params.isNotEmpty ? params : null);
+    final res = await _client.get(uri, headers: _headers());
     if (res.statusCode == 200) {
       final list = jsonDecode(utf8.decode(res.bodyBytes)) as List;
       return list.map((e) => Transaction.fromJson(e as Map<String, dynamic>)).toList();

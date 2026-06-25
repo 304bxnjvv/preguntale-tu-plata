@@ -4,6 +4,9 @@ import '../services/api_service.dart';
 import '../models/chat_message.dart';
 import '../models/summary.dart';
 import '../models/transaction.dart';
+import '../models/dashboard_filter.dart';
+
+export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -12,11 +15,13 @@ final apiProvider = Provider<ApiService>((ref) {
 });
 
 final summaryProvider = FutureProvider<Summary>((ref) {
-  return ref.watch(apiProvider).getSummary();
+  final filter = ref.watch(dashboardFilterProvider);
+  return ref.watch(apiProvider).getSummary(dias: filter.dias, tipo: filter.tipo);
 });
 
 final transactionsProvider = FutureProvider<List<Transaction>>((ref) {
-  return ref.watch(apiProvider).getTransactions();
+  final filter = ref.watch(dashboardFilterProvider);
+  return ref.watch(apiProvider).getTransactions(dias: filter.dias, tipo: filter.tipo);
 });
 
 final chatHistoryProvider = FutureProvider<List<ChatMessage>>((ref) {

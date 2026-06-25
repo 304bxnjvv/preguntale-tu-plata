@@ -176,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               color: AppColors.onPrimary),
                         )
                       : Text(
-                          _registrando ? 'crear cuenta' : 'entrar',
+                          _registrando ? 'Crear cuenta' : 'Entrar',
                           style: AppText.body(16, weight: FontWeight.w600,
                               color: AppColors.onPrimary),
                         ),
@@ -217,13 +217,13 @@ class _TabToggle extends StatelessWidget {
       child: Row(
         children: [
           _Tab(
-            label: 'entrar',
+            label: 'Entrar',
             active: !registrando,
             onTap: () => onChanged(false),
             isLeft: true,
           ),
           _Tab(
-            label: 'registrarse',
+            label: 'Registrarse',
             active: registrando,
             onTap: () => onChanged(true),
             isLeft: false,

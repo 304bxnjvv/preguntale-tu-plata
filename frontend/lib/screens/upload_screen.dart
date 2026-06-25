@@ -62,7 +62,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
         backgroundColor: AppColors.bg,
         elevation: 0,
         title: Text(
-          'subir archivo',
+          'Subir archivo',
           style: AppText.body(17, weight: FontWeight.w600),
         ),
       ),
@@ -107,7 +107,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '¿qué puedes subir?',
+                      '¿Qué puedes subir?',
                       style: AppText.label(AppColors.textMuted),
                     ),
                     const SizedBox(height: 12),
@@ -178,7 +178,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                         )
                       : const Icon(Icons.upload_file_outlined, size: 20),
                   label: Text(
-                    _cargando ? 'leyendo archivo...' : 'elegir archivo',
+                    _cargando ? 'Leyendo archivo...' : 'Elegir archivo',
                     style: AppText.body(16, weight: FontWeight.w600, color: AppColors.onPrimary),
                   ),
                 ),

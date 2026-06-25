@@ -28,13 +28,13 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             const Orb(size: 36),
             const SizedBox(width: 10),
-            Text('tu plata', style: AppText.display(20, weight: FontWeight.w700)),
+            Text('Tu plata', style: AppText.display(20, weight: FontWeight.w700)),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted, size: 20),
-            tooltip: 'salir',
+            tooltip: 'Salir',
             onPressed: () => Supabase.instance.client.auth.signOut(),
           ),
           const SizedBox(width: 4),
@@ -50,7 +50,7 @@ class DashboardScreen extends ConsumerWidget {
             foregroundColor: AppColors.text,
             elevation: 0,
             icon: const Icon(Icons.upload_file_rounded, size: 18),
-            label: Text('subir cartola', style: AppText.body(14, weight: FontWeight.w600)),
+            label: Text('Subir cartola', style: AppText.body(14, weight: FontWeight.w600)),
           ),
           const SizedBox(width: 10),
           FloatingActionButton.extended(
@@ -60,7 +60,7 @@ class DashboardScreen extends ConsumerWidget {
             foregroundColor: AppColors.onPrimary,
             elevation: 0,
             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-            label: Text('preguntar', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.onPrimary)),
+            label: Text('Preguntar', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.onPrimary)),
           ),
         ],
       ),
@@ -73,8 +73,10 @@ class DashboardScreen extends ConsumerWidget {
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
+            const _FilterBar(),
+            const SizedBox(height: 16),
             summary.when(
               loading: () => const Center(
                 child: Padding(
@@ -83,7 +85,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
               error: (e, _) => _ErrorBox(
-                msg: 'no pude cargar el resumen',
+                msg: 'No se pudo cargar el resumen',
                 onRetry: () => ref.invalidate(summaryProvider),
               ),
               data: (s) => _Resumen(s: s),
@@ -95,7 +97,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.receipt_long_rounded, size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 6),
-                  Text('movimientos', style: AppText.label(AppColors.textMuted)),
+                  Text('Movimientos', style: AppText.label(AppColors.textMuted)),
                 ],
               ),
             ),
@@ -107,11 +109,11 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
               error: (e, _) => _ErrorBox(
-                msg: 'no pude cargar los movimientos',
+                msg: 'No se pudo cargar los movimientos',
                 onRetry: () => ref.invalidate(transactionsProvider),
               ),
               data: (list) => list.isEmpty
-                  ? _EmptyState()
+                  ? const _EmptyState()
                   : Column(children: [for (final t in list) TransactionTile(t: t)]),
             ),
           ],
@@ -120,6 +122,171 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 }
+
+// ── Filter bar ────────────────────────────────────────────────────────────────
+
+class _FilterBar extends ConsumerWidget {
+  const _FilterBar();
+
+  static const _diasOpts = [
+    (label: '24h', dias: 1),
+    (label: '3d', dias: 3),
+    (label: '7d', dias: 7),
+    (label: '15d', dias: 15),
+    (label: '30d', dias: 30),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(dashboardFilterProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Time range chips
+        SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _diasOpts.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final opt = _diasOpts[i];
+              final selected = filter.dias == opt.dias;
+              return _FilterChip(
+                label: opt.label,
+                selected: selected,
+                onTap: () => ref.read(dashboardFilterProvider.notifier).state =
+                    DashboardFilter(dias: opt.dias, tipo: filter.tipo),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Type segmented control
+        Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              _TypeSegment(
+                label: 'Ingresos',
+                selected: filter.tipo == 'ingreso',
+                isFirst: true,
+                isLast: false,
+                onTap: () => ref.read(dashboardFilterProvider.notifier).state =
+                    DashboardFilter(dias: filter.dias, tipo: 'ingreso'),
+              ),
+              _TypeSegment(
+                label: 'Gastos',
+                selected: filter.tipo == 'gasto',
+                isFirst: false,
+                isLast: false,
+                onTap: () => ref.read(dashboardFilterProvider.notifier).state =
+                    DashboardFilter(dias: filter.dias, tipo: 'gasto'),
+              ),
+              _TypeSegment(
+                label: 'Ambos',
+                selected: filter.tipo == null,
+                isFirst: false,
+                isLast: true,
+                onTap: () => ref.read(dashboardFilterProvider.notifier).state =
+                    DashboardFilter(dias: filter.dias),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.glass,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: AppText.body(
+            13,
+            weight: selected ? FontWeight.w600 : FontWeight.w400,
+            color: selected ? AppColors.onPrimary : AppColors.textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeSegment extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool isFirst;
+  final bool isLast;
+  final VoidCallback onTap;
+
+  const _TypeSegment({
+    required this.label,
+    required this.selected,
+    required this.isFirst,
+    required this.isLast,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.horizontal(
+              left: isFirst ? const Radius.circular(11) : Radius.zero,
+              right: isLast ? const Radius.circular(11) : Radius.zero,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: AppText.body(
+              13,
+              weight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? AppColors.onPrimary : AppColors.textMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Summary ───────────────────────────────────────────────────────────────────
 
 class _Resumen extends StatelessWidget {
   final Summary s;
@@ -137,7 +304,7 @@ class _Resumen extends StatelessWidget {
           children: [
             Expanded(
               child: SummaryCard(
-                label: 'gastos',
+                label: 'Gastos',
                 valor: formatCLP(gastos),
                 color: AppColors.negative,
                 icon: Icons.arrow_downward_rounded,
@@ -146,7 +313,7 @@ class _Resumen extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: SummaryCard(
-                label: 'ingresos',
+                label: 'Ingresos',
                 valor: formatCLP(ingresos),
                 color: AppColors.positive,
                 icon: Icons.arrow_upward_rounded,
@@ -161,7 +328,11 @@ class _Resumen extends StatelessWidget {
   }
 }
 
+// ── Empty / Error ─────────────────────────────────────────────────────────────
+
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -202,7 +373,7 @@ class _ErrorBox extends StatelessWidget {
             TextButton(
               onPressed: onRetry,
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-              child: Text('reintentar', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.primary)),
+              child: Text('Reintentar', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.primary)),
             ),
           ],
         ),

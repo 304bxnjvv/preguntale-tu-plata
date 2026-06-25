@@ -3,6 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/summary.dart';
 import '../theme.dart';
 
+String _capitalize(String s) =>
+    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
 class GastosDona extends StatelessWidget {
   final List<BancoTotal> porBanco;
   const GastosDona({super.key, required this.porBanco});
@@ -34,7 +37,7 @@ class GastosDona extends StatelessWidget {
             children: [
               const Icon(Icons.donut_small_rounded, size: 14, color: AppColors.textMuted),
               const SizedBox(width: 6),
-              Text('por banco', style: AppText.label(AppColors.textMuted)),
+              Text('Por banco', style: AppText.label(AppColors.textMuted)),
             ],
           ),
           const SizedBox(height: 12),
@@ -76,7 +79,7 @@ class GastosDona extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      porBanco[i].banco,
+                      _capitalize(porBanco[i].banco),
                       style: AppText.label(AppColors.textMuted),
                     ),
                   ],
