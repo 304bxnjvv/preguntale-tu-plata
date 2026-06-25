@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.models import Transaction
 from app.models.schemas import Transaccion
+from app.services.categoria_override_service import get_override
 
 
 def _dedup_key(
@@ -44,6 +45,10 @@ def insert_transactions(
         if key in seen:
             continue
         seen.add(key)
+        categoria = t.categoria
+        ov = get_override(session, user_id, t.descripcion)
+        if ov is not None:
+            categoria = ov
         session.add(
             Transaction(
                 user_id=user_id,
@@ -53,7 +58,7 @@ def insert_transactions(
                 moneda=t.moneda,
                 tarjeta=t.tarjeta,
                 tipo=t.tipo,
-                categoria=t.categoria,
+                categoria=categoria,
                 banco=t.banco,
                 fuente=fuente,
             )

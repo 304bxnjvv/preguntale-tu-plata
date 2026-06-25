@@ -6,13 +6,22 @@ from app.parsers.santander_parser import SantanderParser
 from app.parsers.banco_estado_parser import BancoEstadoParser
 from app.services.transaction_service import insert_transactions, list_transactions, get_summary
 from app.rag.rag_service import indexar_transacciones
-from app.models.schemas import UploadResponse, TransactionOut, SummaryResponse
+from app.models.schemas import (
+    UploadResponse,
+    TransactionOut,
+    SummaryResponse,
+    EditarCategoriaIn,
+    EditarCategoriaOut,
+)
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
 from app.services.extraction_service import extract_from_file, extraer_estado_tarjeta
 from app.services.upload_limit import check_limit, log_upload, UploadLimitError
 from app.services.demo_service import clear_demo
 from app.services.tarjeta_service import guardar_estado
+from app.services.categorias import CATEGORIAS, comercio_key
+from app.services.categoria_override_service import upsert_override
+from app.db.models import Transaction
 
 router = APIRouter()
 
@@ -121,6 +130,41 @@ async def listar_transacciones(
         raise HTTPException(status_code=422, detail=f"tipo debe ser 'ingreso' o 'gasto', no '{tipo}'")
     desde: date | None = date.today() - timedelta(days=dias) if dias is not None else None
     return list_transactions(session, user_id, banco=banco, limit=limit, offset=offset, desde=desde, tipo=tipo)
+
+
+@router.patch("/transactions/{txn_id}", response_model=EditarCategoriaOut)
+async def editar_categoria(
+    txn_id: str,
+    body: EditarCategoriaIn,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if body.categoria not in CATEGORIAS:
+        raise HTTPException(status_code=422, detail="categoría inválida")
+    txn = session.query(Transaction).filter_by(id=txn_id, user_id=user_id).first()
+    if txn is None:
+        raise HTTPException(status_code=404, detail="transacción no encontrada")
+    txn.categoria = body.categoria
+    txn.categoria_manual = True
+    key = comercio_key(txn.descripcion)
+    upsert_override(session, user_id, key, body.categoria)
+    actualizadas = 1
+    if key:
+        otras = (
+            session.query(Transaction)
+            .filter(
+                Transaction.user_id == user_id,
+                Transaction.id != txn_id,
+                Transaction.categoria_manual.is_(False),
+            )
+            .all()
+        )
+        for o in otras:
+            if key in comercio_key(o.descripcion):
+                o.categoria = body.categoria
+                actualizadas += 1
+    session.commit()
+    return EditarCategoriaOut(actualizadas=actualizadas)
 
 
 @router.get("/transactions/summary", response_model=SummaryResponse)

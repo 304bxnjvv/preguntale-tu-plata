@@ -149,6 +149,14 @@ class FinScoreResponse(BaseModel):
     tasa_ahorro: float
 
 
+class EditarCategoriaIn(BaseModel):
+    categoria: str
+
+
+class EditarCategoriaOut(BaseModel):
+    actualizadas: int
+
+
 class TarjetaEstadoResponse(BaseModel):
     tiene_datos: bool
     total_a_pagar: float
