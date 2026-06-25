@@ -79,7 +79,7 @@ Aplicamos el principio de minimización: solo tratamos los datos estrictamente n
 
 | Dato | Plazo de retención |
 |------|--------------------|
-| Archivos subidos (cartolas, fotos) | Se eliminan automáticamente **30 días después de tu última sesión activa**, o de inmediato cuando tú lo solicites. |
+| Archivos subidos (cartolas, fotos) e historial financiero | Se conservan mientras uses la app y hasta **1 año después de tu última sesión activa** — necesitamos tu historial para darte comparativos y análisis útiles. Puedes eliminarlos de inmediato cuando lo solicites desde la app. |
 | Datos de cuenta (email, historial de conversaciones) | Se conservan mientras tu cuenta esté activa. Al eliminar tu cuenta, se borran en un plazo máximo de **30 días hábiles**. |
 | Logs técnicos | Se conservan por un máximo de **12 meses** con fines de seguridad y diagnóstico, luego se eliminan. |
 | Datos de facturación | Se conservan por el plazo que exija la legislación tributaria chilena (actualmente 6 años). |
