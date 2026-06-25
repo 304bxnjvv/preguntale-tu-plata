@@ -109,6 +109,38 @@ class ApiService {
     throw ApiException('No se pudo cargar el comparativo', res.statusCode);
   }
 
+  Future<int> seedDemo() async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/demo/seed'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 201) {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      return j['inserted'] as int;
+    }
+    throw ApiException('No se pudo cargar el demo', res.statusCode);
+  }
+
+  Future<void> clearDemo() async {
+    final res = await _client.delete(
+      Uri.parse('$baseUrl/demo/seed'),
+      headers: _headers(),
+    );
+    if (res.statusCode != 200) {
+      throw ApiException('No se pudo limpiar el demo', res.statusCode);
+    }
+  }
+
+  Future<void> deleteAccountData() async {
+    final res = await _client.delete(
+      Uri.parse('$baseUrl/account/data'),
+      headers: _headers(),
+    );
+    if (res.statusCode != 200) {
+      throw ApiException('No se pudo eliminar los datos', res.statusCode);
+    }
+  }
+
   Future<UploadResult> uploadFile(Uint8List bytes, String filename) async {
     final req = http.MultipartRequest(
       'POST',

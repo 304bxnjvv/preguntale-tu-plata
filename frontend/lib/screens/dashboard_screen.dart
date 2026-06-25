@@ -36,6 +36,11 @@ class DashboardScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.textMuted, size: 20),
+            tooltip: 'Ajustes',
+            onPressed: () => context.push('/ajustes'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted, size: 20),
             tooltip: 'Salir',
             onPressed: () => Supabase.instance.client.auth.signOut(),
@@ -461,6 +466,19 @@ class _EmptyState extends StatelessWidget {
             'Sube tu primera cartola (PDF/CSV) y pregúntame lo que quieras.',
             style: AppText.body(14, color: AppColors.textMuted),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => context.push('/onboarding'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+            icon: const Text('✨', style: TextStyle(fontSize: 16)),
+            label: Text(
+              'Empezar',
+              style: AppText.body(15, weight: FontWeight.w600, color: AppColors.onPrimary),
+            ),
           ),
         ],
       ),

@@ -6,6 +6,8 @@ import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/upload_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/settings_screen.dart';
 
 /// Función pura: dado el estado de sesión y la ubicación actual, devuelve la
 /// ruta a la que redirigir, o null si no hay que redirigir.
@@ -29,6 +31,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
       GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
       GoRoute(path: '/upload', builder: (_, __) => const UploadScreen()),
+      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
+      GoRoute(path: '/ajustes', builder: (_, __) => const SettingsScreen()),
     ],
   );
 });
