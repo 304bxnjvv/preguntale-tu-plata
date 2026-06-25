@@ -324,7 +324,7 @@ class _Resumen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        GastosDona(porBanco: s.gastosPorBanco),
+        GastosDona(porCategoria: s.gastosPorCategoria),
       ],
     );
   }

@@ -7,8 +7,8 @@ String _capitalize(String s) =>
     s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
 class GastosDona extends StatelessWidget {
-  final List<BancoTotal> porBanco;
-  const GastosDona({super.key, required this.porBanco});
+  final List<CategoriaTotal> porCategoria;
+  const GastosDona({super.key, required this.porCategoria});
 
   static const _colores = [
     AppColors.primary,
@@ -20,8 +20,8 @@ class GastosDona extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (porBanco.isEmpty) return const SizedBox.shrink();
-    final total = porBanco.fold<double>(0, (a, b) => a + b.total.abs());
+    if (porCategoria.isEmpty) return const SizedBox.shrink();
+    final total = porCategoria.fold<double>(0, (a, b) => a + b.total.abs());
     if (total == 0) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(16),
@@ -37,7 +37,7 @@ class GastosDona extends StatelessWidget {
             children: [
               const Icon(Icons.donut_small_rounded, size: 14, color: AppColors.textMuted),
               const SizedBox(width: 6),
-              Text('Por banco', style: AppText.label(AppColors.textMuted)),
+              Text('Por categoría', style: AppText.label(AppColors.textMuted)),
             ],
           ),
           const SizedBox(height: 12),
@@ -48,11 +48,11 @@ class GastosDona extends StatelessWidget {
                 sectionsSpace: 3,
                 centerSpaceRadius: 46,
                 sections: [
-                  for (var i = 0; i < porBanco.length; i++)
+                  for (var i = 0; i < porCategoria.length; i++)
                     PieChartSectionData(
-                      value: porBanco[i].total.abs(),
+                      value: porCategoria[i].total.abs(),
                       color: _colores[i % _colores.length],
-                      title: '${(porBanco[i].total.abs() / total * 100).toStringAsFixed(0)}%',
+                      title: '${(porCategoria[i].total.abs() / total * 100).toStringAsFixed(0)}%',
                       radius: 38,
                       titleStyle: AppText.label(AppColors.text),
                     ),
@@ -65,7 +65,7 @@ class GastosDona extends StatelessWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
-              for (var i = 0; i < porBanco.length; i++)
+              for (var i = 0; i < porCategoria.length; i++)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -79,7 +79,7 @@ class GastosDona extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      _capitalize(porBanco[i].banco),
+                      _capitalize(porCategoria[i].categoria),
                       style: AppText.label(AppColors.textMuted),
                     ),
                   ],
