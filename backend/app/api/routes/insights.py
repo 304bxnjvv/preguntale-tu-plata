@@ -3,9 +3,16 @@ from sqlalchemy.orm import Session
 
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
-from app.models.schemas import SuscripcionesResponse, ComparativoResponse, FinScoreResponse, TarjetaEstadoResponse
+from app.models.schemas import (
+    SuscripcionesResponse,
+    ComparativoResponse,
+    FinScoreResponse,
+    TarjetaEstadoResponse,
+    AlertasResponse,
+)
 from app.services.insights_service import detectar_suscripciones, comparativo_mensual, calcular_finscore
 from app.services.tarjeta_service import get_estado
+from app.services.alertas_service import evaluar_alertas
 
 router = APIRouter()
 
@@ -43,3 +50,11 @@ async def get_tarjeta(
     session: Session = Depends(get_session),
 ):
     return get_estado(session, user_id)
+
+
+@router.get("/insights/alertas", response_model=AlertasResponse)
+async def get_alertas(
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    return AlertasResponse(items=evaluar_alertas(session, user_id))

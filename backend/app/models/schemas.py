@@ -205,6 +205,19 @@ class MetasResponse(BaseModel):
     items: list[MetaOut]
 
 
+class AlertaOut(BaseModel):
+    key: str
+    tipo: str        # "tarjeta_vence" | "presupuesto" | "cuotas_proximo_mes" | "gasto_inusual"
+    severidad: str   # "urgent" | "warning" | "info"
+    titulo: str
+    detalle: str
+    fecha: Optional[str]  # YYYY-MM-DD
+
+
+class AlertasResponse(BaseModel):
+    items: list[AlertaOut]
+
+
 class TarjetaEstadoResponse(BaseModel):
     tiene_datos: bool
     total_a_pagar: float
