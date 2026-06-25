@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from app.config import settings
 from app.models.schemas import Transaccion
+from app.services.categorias import CATEGORIAS, categorizar_por_reglas, normalizar
 
 
 class TxnExtraida(BaseModel):
@@ -14,23 +15,29 @@ class TxnExtraida(BaseModel):
     descripcion: str
     monto: float  # negativo = gasto/cargo/compra, positivo = ingreso/abono
     banco: str | None = None
+    categoria: str | None = None
 
 
 class Extraccion(BaseModel):
     transacciones: list[TxnExtraida]
 
 
-_PROMPT = """Eres un extractor de transacciones de cartolas bancarias chilenas \
-(cuenta corriente o tarjeta de credito).
-Del TEXTO extrae TODAS las transacciones reales. Para cada una:
-- fecha en formato YYYY-MM-DD (usa el anio del periodo de la cartola)
-- descripcion = el comercio/glosa
-- monto: NEGATIVO si es gasto/cargo/compra; POSITIVO si es ingreso/abono/deposito/sueldo
-- banco si lo identificas (ej: "Banco de Chile", "Scotiabank", "BCI")
-IGNORA: pagos de la tarjeta (MONTO CANCELADO), totales, saldos, cupos, comprobantes de pago.
+_CATEGORIAS_STR = ", ".join(f'"{c}"' for c in CATEGORIAS)
 
-TEXTO:
-{texto}"""
+_PROMPT = (
+    "Eres un extractor de transacciones de cartolas bancarias chilenas "
+    "(cuenta corriente o tarjeta de credito).\n"
+    "Del TEXTO extrae TODAS las transacciones reales. Para cada una:\n"
+    "- fecha en formato YYYY-MM-DD (usa el anio del periodo de la cartola)\n"
+    "- descripcion = el comercio/glosa\n"
+    "- monto: NEGATIVO si es gasto/cargo/compra; POSITIVO si es ingreso/abono/deposito/sueldo\n"
+    "- banco si lo identificas (ej: \"Banco de Chile\", \"Scotiabank\", \"BCI\")\n"
+    "- categoria: elige EXACTAMENTE UNA de estas opciones basandote en el comercio: "
+    + _CATEGORIAS_STR
+    + "; si no estas seguro usa \"Otros\".\n"
+    "IGNORA: pagos de la tarjeta (MONTO CANCELADO), totales, saldos, cupos, comprobantes de pago.\n"
+    "\nTEXTO:\n{texto}"
+)
 
 
 def _extractor():
@@ -47,6 +54,7 @@ def _map(t: TxnExtraida) -> Transaccion | None:
     except (ValueError, TypeError):
         return None
     banco = (t.banco or "desconocido").strip().lower().replace(" ", "") or "desconocido"
+    categoria = categorizar_por_reglas(t.descripcion) or normalizar(t.categoria) or "Otros"
     return Transaccion(
         fecha=fecha,
         descripcion=t.descripcion,
@@ -54,6 +62,7 @@ def _map(t: TxnExtraida) -> Transaccion | None:
         tipo="cargo" if t.monto < 0 else "abono",
         banco=banco,
         moneda="CLP",
+        categoria=categoria,
     )
 
 
