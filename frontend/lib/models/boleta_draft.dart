@@ -14,7 +14,7 @@ class BoletaDraft {
   factory BoletaDraft.fromJson(Map<String, dynamic> j) => BoletaDraft(
         comercio: j['comercio'] as String,
         monto: (j['monto'] as num).toDouble(),
-        fecha: j['fecha'] as String,
+        fecha: j['fecha'] as String? ?? '',
         categoria: j['categoria'] as String?,
       );
 }

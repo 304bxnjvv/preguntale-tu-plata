@@ -42,6 +42,16 @@ void main() {
       });
       expect(d.monto, -5000.0);
     });
+
+    test('tolera fecha null → queda como cadena vacía', () {
+      final d = BoletaDraft.fromJson({
+        'comercio': 'Minimarket',
+        'monto': -2000.0,
+        'fecha': null,
+        'categoria': null,
+      });
+      expect(d.fecha, '');
+    });
   });
 
   // ── ApiService.escanearBoleta ────────────────────────────────────────────────

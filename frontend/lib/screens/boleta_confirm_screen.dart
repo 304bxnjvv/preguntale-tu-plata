@@ -44,7 +44,15 @@ class _BoletaConfirmScreenState extends State<BoletaConfirmScreen> {
     // Mostrar el monto como positivo (es gasto, monto es negativo)
     final montoAbs = widget.draft.monto.abs();
     _montoCtrl = TextEditingController(text: montoAbs.toStringAsFixed(0));
-    _fecha = widget.draft.fecha;
+    // Si la boleta no traía fecha (null → ''), usar hoy como default
+    final fechaDraft = widget.draft.fecha;
+    if (fechaDraft.isEmpty) {
+      final now = DateTime.now();
+      _fecha =
+          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    } else {
+      _fecha = fechaDraft;
+    }
     _categoria = widget.draft.categoria ?? kCategorias.first;
   }
 
