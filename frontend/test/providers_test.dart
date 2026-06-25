@@ -49,8 +49,8 @@ void main() {
 
   test('cambiar dashboardFilterProvider refetches summaryProvider con nuevos parámetros', () async {
     final api = MockApi();
-    // Default call: dias=30, tipo=null
-    when(() => api.getSummary(dias: 30, tipo: null)).thenAnswer((_) async => const Summary(
+    // Default call: dias=null (Todo), tipo=null
+    when(() => api.getSummary(dias: null, tipo: null)).thenAnswer((_) async => const Summary(
           porMoneda: {'CLP': MonedaTotales(ingresos: 100, gastos: -50)},
           gastosPorCategoria: [],
           gastosPorBanco: [],

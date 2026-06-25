@@ -128,7 +128,9 @@ class DashboardScreen extends ConsumerWidget {
 class _FilterBar extends ConsumerWidget {
   const _FilterBar();
 
+  // null dias = "Todo" (sin filtro de fecha)
   static const _diasOpts = [
+    (label: 'Todo', dias: null),
     (label: '24h', dias: 1),
     (label: '3d', dias: 3),
     (label: '7d', dias: 7),

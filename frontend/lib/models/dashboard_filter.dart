@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DashboardFilter {
-  final int? dias;
+  final int? dias; // null = sin filtro de fecha (Todo)
   final String? tipo; // 'ingreso' | 'gasto' | null (ambos)
-  const DashboardFilter({this.dias = 30, this.tipo});
+  const DashboardFilter({this.dias, this.tipo});
 
   @override
   bool operator ==(Object other) =>
@@ -14,4 +14,4 @@ class DashboardFilter {
 }
 
 final dashboardFilterProvider =
-    StateProvider<DashboardFilter>((ref) => const DashboardFilter(dias: 30));
+    StateProvider<DashboardFilter>((ref) => const DashboardFilter());
