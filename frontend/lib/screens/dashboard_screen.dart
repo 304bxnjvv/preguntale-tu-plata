@@ -12,6 +12,14 @@ import '../widgets/transaction_tile.dart';
 import '../widgets/gastos_dona.dart';
 import '../widgets/finscore_card.dart';
 
+void _refrescarDatos(WidgetRef ref) {
+  ref.invalidate(summaryProvider);
+  ref.invalidate(transactionsProvider);
+  ref.invalidate(suscripcionesProvider);
+  ref.invalidate(comparativoProvider);
+  ref.invalidate(finScoreProvider);
+}
+
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -56,7 +64,10 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           FloatingActionButton.extended(
             heroTag: 'subir',
-            onPressed: () => context.push('/upload'),
+            onPressed: () async {
+              await context.push('/upload');
+              _refrescarDatos(ref);
+            },
             backgroundColor: AppColors.surface,
             foregroundColor: AppColors.text,
             elevation: 0,
@@ -66,7 +77,10 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(width: 10),
           FloatingActionButton.extended(
             heroTag: 'preguntar',
-            onPressed: () => context.push('/chat'),
+            onPressed: () async {
+              await context.push('/chat');
+              _refrescarDatos(ref);
+            },
             backgroundColor: AppColors.primary,
             foregroundColor: AppColors.onPrimary,
             elevation: 0,
