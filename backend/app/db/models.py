@@ -79,3 +79,28 @@ class CategoriaOverride(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     __table_args__ = (UniqueConstraint("user_id", "comercio_key", name="uq_override_user_key"),)
+
+
+class Presupuesto(Base):
+    __tablename__ = "presupuestos"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, index=True)
+    categoria = Column(String, nullable=False)
+    monto_tope = Column(Numeric, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (UniqueConstraint("user_id", "categoria", name="uq_presupuesto_user_cat"),)
+
+
+class Meta(Base):
+    __tablename__ = "metas"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, index=True)
+    nombre = Column(String, nullable=False)
+    monto_objetivo = Column(Numeric, nullable=False, default=0)
+    monto_actual = Column(Numeric, nullable=False, default=0)
+    fecha_objetivo = Column(Date, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
