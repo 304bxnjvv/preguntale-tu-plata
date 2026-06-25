@@ -5,6 +5,7 @@ import '../models/chat_message.dart';
 import '../models/summary.dart';
 import '../models/transaction.dart';
 import '../models/dashboard_filter.dart';
+import '../models/insights.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 
@@ -26,4 +27,12 @@ final transactionsProvider = FutureProvider<List<Transaction>>((ref) {
 
 final chatHistoryProvider = FutureProvider<List<ChatMessage>>((ref) {
   return ref.watch(apiProvider).getChatHistory();
+});
+
+final suscripcionesProvider = FutureProvider<Suscripciones>((ref) {
+  return ref.watch(apiProvider).getSuscripciones();
+});
+
+final comparativoProvider = FutureProvider<Comparativo>((ref) {
+  return ref.watch(apiProvider).getComparativo();
 });

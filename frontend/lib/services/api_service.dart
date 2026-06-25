@@ -5,6 +5,7 @@ import '../config.dart';
 import '../models/chat_message.dart';
 import '../models/transaction.dart';
 import '../models/summary.dart';
+import '../models/insights.dart';
 
 class ApiService {
   final http.Client _client;
@@ -84,6 +85,28 @@ class ApiService {
       );
     }
     throw ApiException('No se pudo procesar la pregunta', res.statusCode);
+  }
+
+  Future<Suscripciones> getSuscripciones() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/suscripciones'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return Suscripciones.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudieron cargar las suscripciones', res.statusCode);
+  }
+
+  Future<Comparativo> getComparativo() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/comparativo'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return Comparativo.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo cargar el comparativo', res.statusCode);
   }
 
   Future<UploadResult> uploadFile(Uint8List bytes, String filename) async {

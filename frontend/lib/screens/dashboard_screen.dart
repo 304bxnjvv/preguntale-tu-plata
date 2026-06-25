@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/data_providers.dart';
 import '../models/summary.dart';
+import '../models/insights.dart';
 import '../theme.dart';
 import '../widgets/orb.dart';
 import '../widgets/summary_card.dart';
@@ -17,6 +18,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(summaryProvider);
     final txns = ref.watch(transactionsProvider);
+    final suscripciones = ref.watch(suscripcionesProvider);
+    final comparativo = ref.watch(comparativoProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -70,6 +73,8 @@ class DashboardScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(summaryProvider);
           ref.invalidate(transactionsProvider);
+          ref.invalidate(suscripcionesProvider);
+          ref.invalidate(comparativoProvider);
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
@@ -86,7 +91,17 @@ class DashboardScreen extends ConsumerWidget {
                 msg: 'No se pudo cargar el resumen',
                 onRetry: () => ref.invalidate(summaryProvider),
               ),
-              data: (s) => _Resumen(s: s),
+              data: (s) => _Resumen(s: s, comparativo: comparativo),
+            ),
+            suscripciones.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (s) => s.items.isEmpty
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: _SuscripcionesCard(s: s),
+                    ),
             ),
             const SizedBox(height: 20),
             const _FilterBar(),
@@ -292,24 +307,53 @@ class _TypeSegment extends StatelessWidget {
 
 class _Resumen extends StatelessWidget {
   final Summary s;
-  const _Resumen({required this.s});
+  final AsyncValue<Comparativo> comparativo;
+  const _Resumen({required this.s, required this.comparativo});
 
   @override
   Widget build(BuildContext context) {
     final clp = s.porMoneda['CLP'];
     final gastos = clp?.gastos ?? 0;
     final ingresos = clp?.ingresos ?? 0;
+
+    // Comparativo line: only shown when gastosAnterior != 0
+    final comparativoLine = comparativo.whenOrNull(
+      data: (c) {
+        if (c.gastosAnterior == 0) return null;
+        final subio = c.delta > 0; // delta positive = gasto subió
+        final arrow = subio ? '↑' : '↓';
+        final color = subio ? AppColors.negative : AppColors.positive;
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: [
+              Text(
+                'vs mes pasado: $arrow ${formatCLP(c.delta.abs())}',
+                style: AppText.body(12, color: color, weight: FontWeight.w500),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
             Expanded(
-              child: SummaryCard(
-                label: 'Gastos',
-                valor: formatCLP(gastos),
-                color: AppColors.negative,
-                icon: Icons.arrow_downward_rounded,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SummaryCard(
+                    label: 'Gastos',
+                    valor: formatCLP(gastos),
+                    color: AppColors.negative,
+                    icon: Icons.arrow_downward_rounded,
+                  ),
+                  if (comparativoLine != null) comparativoLine,
+                ],
               ),
             ),
             const SizedBox(width: 12),
@@ -328,6 +372,70 @@ class _Resumen extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Suscripciones card ────────────────────────────────────────────────────────
+
+class _SuscripcionesCard extends StatelessWidget {
+  final Suscripciones s;
+  const _SuscripcionesCard({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.autorenew_rounded, size: 14, color: AppColors.accent),
+              const SizedBox(width: 6),
+              Text('Suscripciones detectadas', style: AppText.label(AppColors.accent)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            formatCLP(s.totalMensual),
+            style: AppText.amount(22, color: AppColors.accent),
+          ),
+          const SizedBox(height: 12),
+          ...s.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _capitalize(item.descripcion),
+                      style: AppText.body(13, color: AppColors.textMuted),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    formatCLP(item.monto),
+                    style: AppText.body(13, weight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 }
 
 // ── Empty / Error ─────────────────────────────────────────────────────────────
