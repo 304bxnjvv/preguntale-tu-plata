@@ -78,11 +78,7 @@ class _PresupuestoCardContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    lista.isEmpty
-                        ? 'Presupuestos'
-                        : alertas.isEmpty
-                            ? 'Presupuestos'
-                            : 'Presupuestos',
+                    'Presupuestos',
                     style: AppText.label(AppColors.textMuted),
                   ),
                   const SizedBox(height: 3),

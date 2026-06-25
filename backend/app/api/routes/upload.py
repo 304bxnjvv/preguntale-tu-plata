@@ -147,7 +147,8 @@ async def editar_categoria(
     txn.categoria = body.categoria
     txn.categoria_manual = True
     key = comercio_key(txn.descripcion)
-    upsert_override(session, user_id, key, body.categoria)
+    if key:
+        upsert_override(session, user_id, key, body.categoria)
     actualizadas = 1
     if key:
         otras = (

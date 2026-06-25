@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.db.models import CategoriaOverride
 from app.services.categorias import comercio_key
@@ -10,6 +11,7 @@ def upsert_override(session: Session, user_id: str, key: str, categoria: str) ->
         session.add(CategoriaOverride(user_id=user_id, comercio_key=key, categoria=categoria))
     else:
         row.categoria = categoria
+        row.updated_at = datetime.now(timezone.utc)
     session.commit()
 
 

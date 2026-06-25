@@ -85,3 +85,13 @@ def test_editar_categoria_no_pisa_otra_manual(ctx):
     s2 = ctx()
     # id1 era manual con otra categoría → no se pisa
     assert s2.query(Transaction).filter_by(id=id1).first().categoria == "Salud"
+
+
+def test_patch_transaction_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.patch(
+        "/api/v1/transactions/00000000-0000-0000-0000-000000000001",
+        json={"categoria": "Comida y delivery"},
+    )
+    assert r.status_code in (401, 403)

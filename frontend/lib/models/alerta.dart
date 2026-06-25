@@ -6,7 +6,7 @@ class Alerta {
   final String severidad;
   final String titulo;
   final String detalle;
-  final String fecha;
+  final String? fecha;
 
   const Alerta({
     required this.key,
@@ -14,7 +14,7 @@ class Alerta {
     required this.severidad,
     required this.titulo,
     required this.detalle,
-    required this.fecha,
+    this.fecha,
   });
 
   factory Alerta.fromJson(Map<String, dynamic> j) => Alerta(
@@ -23,6 +23,6 @@ class Alerta {
         severidad: j['severidad'] as String,
         titulo: j['titulo'] as String,
         detalle: j['detalle'] as String,
-        fecha: j['fecha'] as String,
+        fecha: j['fecha'] as String?,
       );
 }

@@ -196,3 +196,42 @@ def test_get_metas_requires_auth():
     app.dependency_overrides.clear()
     c = TestClient(app)
     assert c.get("/api/v1/metas").status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# Auth negativo — mutaciones presupuestos y metas
+# ---------------------------------------------------------------------------
+
+def test_post_presupuesto_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.post("/api/v1/presupuestos", json={"categoria": "Comida y delivery", "monto_tope": 1000})
+    assert r.status_code in (401, 403)
+
+
+def test_delete_presupuesto_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.delete("/api/v1/presupuestos/Comida y delivery")
+    assert r.status_code in (401, 403)
+
+
+def test_post_meta_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.post("/api/v1/metas", json={"nombre": "Ahorro", "monto_objetivo": 50000})
+    assert r.status_code in (401, 403)
+
+
+def test_patch_meta_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.patch("/api/v1/metas/00000000-0000-0000-0000-000000000001", json={"monto_actual": 1000})
+    assert r.status_code in (401, 403)
+
+
+def test_delete_meta_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.delete("/api/v1/metas/00000000-0000-0000-0000-000000000001")
+    assert r.status_code in (401, 403)

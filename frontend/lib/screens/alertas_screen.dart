@@ -127,11 +127,13 @@ class _AlertaCard extends StatelessWidget {
                     alerta.detalle,
                     style: AppText.body(13, color: AppColors.textMuted),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    alerta.fecha,
-                    style: AppText.label(AppColors.textMuted),
-                  ),
+                  if (alerta.fecha != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      alerta.fecha!,
+                      style: AppText.label(AppColors.textMuted),
+                    ),
+                  ],
                 ],
               ),
             ),
