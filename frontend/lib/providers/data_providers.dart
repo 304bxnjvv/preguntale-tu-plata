@@ -6,9 +6,11 @@ import '../models/summary.dart';
 import '../models/transaction.dart';
 import '../models/dashboard_filter.dart';
 import '../models/insights.dart';
+import '../models/finscore.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 export '../services/api_service.dart' show Subscription;
+export '../models/finscore.dart' show FinScore, FinFactor;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -40,4 +42,8 @@ final comparativoProvider = FutureProvider<Comparativo>((ref) {
 
 final subscriptionProvider = FutureProvider<Subscription>((ref) {
   return ref.watch(apiProvider).getSubscription();
+});
+
+final finScoreProvider = FutureProvider<FinScore>((ref) {
+  return ref.watch(apiProvider).getFinScore();
 });

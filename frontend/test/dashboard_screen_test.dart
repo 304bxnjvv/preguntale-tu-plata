@@ -23,6 +23,13 @@ List<Override> _insightsOverrides() => [
             diasRestantes: 0,
             precioClp: 3990,
           )),
+      finScoreProvider.overrideWith((ref) async => const FinScore(
+            score: 0,
+            nivel: 'sin datos',
+            resumen: '',
+            factores: [],
+            tasaAhorro: 0,
+          )),
     ];
 
 void main() {
@@ -91,6 +98,10 @@ void main() {
               gastosAnterior: 0,
               delta: 0,
             )),
+        subscriptionProvider.overrideWith((ref) async => const Subscription(
+              estado: 'activa', diasRestantes: 0, precioClp: 3990)),
+        finScoreProvider.overrideWith((ref) async => const FinScore(
+              score: 0, nivel: 'sin datos', resumen: '', factores: [], tasaAhorro: 0)),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
@@ -125,6 +136,8 @@ void main() {
               diasRestantes: 0,
               precioClp: 3990,
             )),
+        finScoreProvider.overrideWith((ref) async => const FinScore(
+              score: 0, nivel: 'sin datos', resumen: '', factores: [], tasaAhorro: 0)),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
@@ -147,6 +160,8 @@ void main() {
               diasRestantes: 14,
               precioClp: 3990,
             )),
+        finScoreProvider.overrideWith((ref) async => const FinScore(
+              score: 0, nivel: 'sin datos', resumen: '', factores: [], tasaAhorro: 0)),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
@@ -169,6 +184,8 @@ void main() {
               diasRestantes: 0,
               precioClp: 3990,
             )),
+        finScoreProvider.overrideWith((ref) async => const FinScore(
+              score: 0, nivel: 'sin datos', resumen: '', factores: [], tasaAhorro: 0)),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));

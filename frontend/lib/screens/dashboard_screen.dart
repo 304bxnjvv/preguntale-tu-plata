@@ -10,6 +10,7 @@ import '../widgets/orb.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/gastos_dona.dart';
+import '../widgets/finscore_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -21,6 +22,7 @@ class DashboardScreen extends ConsumerWidget {
     final suscripciones = ref.watch(suscripcionesProvider);
     final comparativo = ref.watch(comparativoProvider);
     final subscription = ref.watch(subscriptionProvider);
+    final finScore = ref.watch(finScoreProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -81,6 +83,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(transactionsProvider);
           ref.invalidate(suscripcionesProvider);
           ref.invalidate(comparativoProvider);
+          ref.invalidate(finScoreProvider);
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
@@ -108,6 +111,17 @@ class DashboardScreen extends ConsumerWidget {
                 return null;
               },
             ) ?? const SizedBox.shrink(),
+            // FinScore widget — shown when data available; silent on error or sin datos
+            finScore.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (fs) => fs.nivel == 'sin datos'
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: FinScoreCard(data: fs),
+                    ),
+            ),
             summary.when(
               loading: () => const Center(
                 child: Padding(

@@ -6,6 +6,7 @@ import '../models/chat_message.dart';
 import '../models/transaction.dart';
 import '../models/summary.dart';
 import '../models/insights.dart';
+import '../models/finscore.dart';
 
 class Subscription {
   final String estado;
@@ -117,6 +118,17 @@ class ApiService {
       return Suscripciones.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
     }
     throw ApiException('No se pudieron cargar las suscripciones', res.statusCode);
+  }
+
+  Future<FinScore> getFinScore() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/finscore'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return FinScore.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo cargar el FinScore', res.statusCode);
   }
 
   Future<Comparativo> getComparativo() async {
