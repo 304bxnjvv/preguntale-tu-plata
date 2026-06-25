@@ -10,8 +10,21 @@ def save_message(session: Session, user_id: str, role: str, content: str) -> Cha
     return msg
 
 
+def delete_message(session: Session, message_id: int) -> None:
+    """Delete a single ChatMessage by primary key. Used to roll back an orphaned user row
+    when the LLM call that should follow it fails."""
+    msg = session.get(ChatMessage, message_id)
+    if msg is not None:
+        session.delete(msg)
+        session.commit()
+
+
 def get_history(session: Session, user_id: str, limit: int = 100) -> list[ChatMessage]:
-    """All messages for user, ascending by created_at."""
+    """Return all messages for *user_id*, ascending by created_at.
+
+    The ``limit`` (default 100) is a guard against unbounded result sets;
+    it returns the last ``limit`` messages in chronological (ascending) order.
+    """
     return (
         session.query(ChatMessage)
         .filter(ChatMessage.user_id == user_id)

@@ -272,3 +272,43 @@ class TestChatAskEndpoint:
         assert all(r["content"] != "pregunta A" for r in hist_b)
 
         app.dependency_overrides.clear()
+
+
+class TestOrphanPrevention:
+    """When the LLM/RAG call raises, no rows should be left in the DB."""
+
+    def test_ask_llm_failure_returns_502_and_no_orphan(self, monkeypatch):
+        engine = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        Base.metadata.create_all(engine)
+        TestSession = sessionmaker(bind=engine)
+
+        def _override_session():
+            s = TestSession()
+            try:
+                yield s
+            finally:
+                s.close()
+
+        def _exploding_ask(question, user_id, history=None):
+            raise RuntimeError("LLM network error")
+
+        monkeypatch.setattr("app.api.routes.ask.ask", _exploding_ask)
+        app.dependency_overrides[get_session] = _override_session
+        app.dependency_overrides[get_current_user] = lambda: "u_orphan"
+
+        c = TestClient(app)
+
+        # The POST should return a 502 error
+        r = c.post("/api/v1/chat/ask", json={"question": "pregunta que falla"})
+        assert r.status_code == 502
+
+        # GET /history must show NO rows — the user message was rolled back
+        hist = c.get("/api/v1/chat/history")
+        assert hist.status_code == 200
+        assert hist.json() == [], "orphan user row must have been deleted on LLM failure"
+
+        app.dependency_overrides.clear()

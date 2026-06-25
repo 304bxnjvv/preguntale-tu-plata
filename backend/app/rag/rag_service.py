@@ -60,14 +60,22 @@ def indexar_transacciones(transacciones: list[Transaccion], user_id: str) -> int
 
 
 def _build_history_block(history: list[tuple[str, str]] | None) -> str:
-    """Render the 'Conversación previa' block for prompt injection, or empty string."""
+    """Render the 'Conversación previa' block for prompt injection, or empty string.
+
+    When *history* is empty/None, returns ``""`` so the ``{history_block}``
+    placeholder in the prompt template produces no extra blank line.
+    When non-empty, the returned string starts with a leading newline (to
+    separate from the preceding paragraph) but has NO trailing newline — the
+    template's own line-break after ``{history_block}`` acts as the separator
+    to the next section, keeping the prompt clean in both cases.
+    """
     if not history:
         return ""
     role_labels = {"user": "Usuario", "assistant": "Asistente"}
     lines = "\n".join(
         f"{role_labels.get(role, role)}: {content}" for role, content in history
     )
-    return f"\nConversación previa:\n{lines}\n"
+    return f"\nConversación previa:\n{lines}"
 
 
 def ask(
