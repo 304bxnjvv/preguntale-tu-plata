@@ -51,3 +51,18 @@ class Subscription(Base):
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
     periodo_fin = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class TarjetaEstado(Base):
+    __tablename__ = "tarjeta_estado"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, unique=True, index=True)
+    total_a_pagar = Column(Numeric, nullable=False, default=0)
+    monto_minimo = Column(Numeric, nullable=False, default=0)
+    fecha_vencimiento = Column(Date, nullable=True)
+    cupo_total = Column(Numeric, nullable=False, default=0)
+    cupo_utilizado = Column(Numeric, nullable=False, default=0)
+    cuotas = Column(Text, nullable=False, default="[]")  # JSON string
+    comprometido_proximo_mes = Column(Numeric, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

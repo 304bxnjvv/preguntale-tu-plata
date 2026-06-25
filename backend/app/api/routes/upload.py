@@ -9,9 +9,10 @@ from app.rag.rag_service import indexar_transacciones
 from app.models.schemas import UploadResponse, TransactionOut, SummaryResponse
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
-from app.services.extraction_service import extract_from_file
+from app.services.extraction_service import extract_from_file, extraer_estado_tarjeta
 from app.services.upload_limit import check_limit, log_upload, UploadLimitError
 from app.services.demo_service import clear_demo
+from app.services.tarjeta_service import guardar_estado
 
 router = APIRouter()
 
@@ -81,6 +82,15 @@ async def upload_universal(
         clear_demo(session, user_id)
     # El LLM ya se invocó (costo) → la subida cuenta contra el límite, haya o no transacciones.
     log_upload(session, user_id, filename, len(nuevas))
+
+    # Try to extract credit-card statement data from PDFs (best-effort, never blocks upload).
+    if filename.lower().endswith(".pdf"):
+        try:
+            estado_tarjeta = extraer_estado_tarjeta(content, filename)
+            if estado_tarjeta is not None:
+                guardar_estado(session, user_id, estado_tarjeta)
+        except Exception:
+            pass  # extraction failure must never break the upload response
 
     if not transacciones:
         raise HTTPException(

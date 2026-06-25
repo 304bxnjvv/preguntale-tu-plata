@@ -126,3 +126,72 @@ def extract_from_file(content: bytes, filename: str) -> list[Transaccion]:
     if ext in ("jpg", "jpeg", "png", "webp"):
         return extract_from_image(content, ext)
     raise ValueError(f"Tipo de archivo no soportado: .{ext}")
+
+
+# ── Credit-card statement extraction ─────────────────────────────────────────
+
+class CuotaPendiente(BaseModel):
+    descripcion: str
+    valor_cuota: float
+    cuotas_restantes: int
+
+
+class EstadoTarjeta(BaseModel):
+    es_tarjeta: bool
+    total_a_pagar: float = 0.0
+    monto_minimo: float = 0.0
+    fecha_vencimiento: str | None = None  # YYYY-MM-DD
+    cupo_total: float = 0.0
+    cupo_utilizado: float = 0.0
+    cuotas_pendientes: list[CuotaPendiente] = []
+
+
+_PROMPT_TARJETA = (
+    "Eres un extractor de estados de cuenta de tarjetas de crédito chilenas "
+    "(Banco de Chile, Scotiabank, Falabella, BCI, Itaú, Santander, etc.).\n"
+    "Analiza el siguiente TEXTO y determina si es un estado de cuenta de tarjeta de crédito.\n"
+    "Si LO ES, extrae:\n"
+    "- total_a_pagar: monto total a pagar / total facturado / total cobrado (número positivo)\n"
+    "- monto_minimo: pago mínimo requerido (número positivo)\n"
+    "- fecha_vencimiento: fecha límite de pago en formato YYYY-MM-DD (o null si no la encuentras)\n"
+    "- cupo_total: cupo total de la tarjeta (número positivo)\n"
+    "- cupo_utilizado: cupo utilizado o consumido (número positivo)\n"
+    "- cuotas_pendientes: lista de compras en cuotas vigentes. Para cada una:\n"
+    "    * descripcion: nombre del comercio o glosa\n"
+    "    * valor_cuota: monto de CADA cuota mensual (no el total)\n"
+    "    * cuotas_restantes: cuotas que AÚN quedan por pagar "
+    "(ej: '3 de 12 cuotas' → cuotas_restantes=9, es decir 12-3)\n"
+    "Si NO es un estado de cuenta de tarjeta de crédito, devuelve es_tarjeta=false.\n"
+    "IGNORA transacciones normales de cartola bancaria que no sean cuotas de TC.\n"
+    "\nTEXTO:\n{texto}"
+)
+
+
+def _extractor_tarjeta():
+    return ChatOpenAI(
+        model="gpt-4o-mini",
+        api_key=settings.openai_api_key,
+        temperature=0,
+    ).with_structured_output(EstadoTarjeta)
+
+
+def extraer_estado_tarjeta(content: bytes, filename: str) -> dict | None:
+    """Extract credit-card statement data from a PDF.
+
+    Returns a dict (model_dump of EstadoTarjeta) when the file is a Chilean
+    credit-card statement, or None otherwise (non-PDF or not a statement).
+    """
+    ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+    if ext != "pdf":
+        return None
+
+    with pdfplumber.open(io.BytesIO(content)) as pdf:
+        texto = "\n".join((p.extract_text() or "") for p in pdf.pages)
+
+    texto_safe = _mask_sensitive(texto[:30000])
+    resultado: EstadoTarjeta = _extractor_tarjeta().invoke(
+        _PROMPT_TARJETA.format(texto=texto_safe)
+    )
+    if not resultado.es_tarjeta:
+        return None
+    return resultado.model_dump()

@@ -120,6 +120,20 @@ def _build_resumen_block(session: Session | None, user_id: str) -> str:
         else:
             lines.append("- Sin suscripciones detectadas este mes.")
 
+        # Inject credit-card state if available
+        try:
+            from app.services.tarjeta_service import get_estado as _get_tarjeta
+            tc = _get_tarjeta(session, user_id)
+            if tc["tiene_datos"]:
+                fv = tc["fecha_vencimiento"] or "sin fecha"
+                lines.append(
+                    f"- Tarjeta de crédito: total a pagar ${tc['total_a_pagar']:,.0f} CLP"
+                    f", vence {fv}"
+                    f", comprometido próximo mes ${tc['comprometido_proximo_mes']:,.0f} CLP"
+                )
+        except Exception:
+            pass
+
         return "\n".join(lines)
     except Exception:
         return ""

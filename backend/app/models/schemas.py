@@ -147,3 +147,14 @@ class FinScoreResponse(BaseModel):
     resumen: str
     factores: list[FinScoreFactor]
     tasa_ahorro: float
+
+
+class TarjetaEstadoResponse(BaseModel):
+    tiene_datos: bool
+    total_a_pagar: float
+    monto_minimo: float
+    fecha_vencimiento: Optional[str]   # YYYY-MM-DD or null
+    cupo_total: float
+    cupo_utilizado: float
+    comprometido_proximo_mes: float
+    cuotas: list[dict]

@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
-from app.models.schemas import SuscripcionesResponse, ComparativoResponse, FinScoreResponse
+from app.models.schemas import SuscripcionesResponse, ComparativoResponse, FinScoreResponse, TarjetaEstadoResponse
 from app.services.insights_service import detectar_suscripciones, comparativo_mensual, calcular_finscore
+from app.services.tarjeta_service import get_estado
 
 router = APIRouter()
 
@@ -34,3 +35,11 @@ async def get_finscore(
 ):
     data = calcular_finscore(session, user_id)
     return FinScoreResponse(**data)
+
+
+@router.get("/insights/tarjeta", response_model=TarjetaEstadoResponse)
+async def get_tarjeta(
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    return get_estado(session, user_id)
