@@ -13,6 +13,9 @@ import 'screens/consent_screen.dart';
 import 'screens/presupuestos_screen.dart';
 import 'screens/metas_screen.dart';
 import 'screens/alertas_screen.dart';
+import 'screens/boleta_confirm_screen.dart';
+import 'models/boleta_draft.dart';
+import 'providers/data_providers.dart';
 
 /// Función pura: dado el estado de sesión y la ubicación actual, devuelve la
 /// ruta a la que redirigir, o null si no hay que redirigir.
@@ -43,6 +46,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/presupuestos', builder: (_, __) => const PresupuestosScreen()),
       GoRoute(path: '/metas', builder: (_, __) => const MetasScreen()),
       GoRoute(path: '/alertas', builder: (_, __) => const AlertasScreen()),
+      GoRoute(
+        path: '/boleta',
+        builder: (context, state) {
+          final draft = state.extra as BoletaDraft;
+          // Buscar el ApiService desde el ProviderScope disponible en el contexto.
+          // Para evitar dependencia circular con ref, pasamos onGuardar como closure.
+          final container = ProviderScope.containerOf(context, listen: false);
+          final api = container.read(apiProvider);
+          return BoletaConfirmScreen(
+            draft: draft,
+            onGuardar: ({
+              required String comercio,
+              required double monto,
+              required String fecha,
+              required String categoria,
+            }) =>
+                api.crearManual(
+              comercio: comercio,
+              monto: monto,
+              fecha: fecha,
+              categoria: categoria,
+            ),
+          );
+        },
+      ),
     ],
   );
 });

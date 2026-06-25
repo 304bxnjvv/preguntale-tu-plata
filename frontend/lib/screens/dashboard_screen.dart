@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/data_providers.dart';
 import '../models/summary.dart';
@@ -19,6 +20,50 @@ import '../widgets/resumen_semanal_card.dart';
 import '../widgets/forecast_card.dart';
 import '../services/alertas_seen.dart';
 import '../services/notif_service.dart';
+
+/// Captura una foto de boleta (cámara en móvil, galería en web) y navega a
+/// la pantalla de confirmación. Si hay error, muestra un SnackBar.
+Future<void> _escanearBoleta(BuildContext context, WidgetRef ref) async {
+  final picker = ImagePicker();
+  // En web no existe la cámara nativa; caemos a galería.
+  final source = kIsWeb ? ImageSource.gallery : ImageSource.camera;
+  XFile? file;
+  try {
+    file = await picker.pickImage(source: source, imageQuality: 85);
+  } catch (_) {
+    // Si la cámara no está disponible (ej: emulador), intentar galería.
+    try {
+      file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo acceder a la cámara ni a la galería')),
+        );
+      }
+      return;
+    }
+  }
+
+  if (file == null) return; // usuario canceló
+
+  final bytes = await file.readAsBytes();
+  final ext = file.name.split('.').last.toLowerCase();
+  final api = ref.read(apiProvider);
+
+  try {
+    final draft = await api.escanearBoleta(bytes, file.name.isNotEmpty ? file.name : 'boleta.$ext');
+    if (context.mounted) {
+      final guardado = await context.push<bool>('/boleta', extra: draft);
+      if (guardado == true) _refrescarDatos(ref);
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+}
 
 void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(summaryProvider);
@@ -102,6 +147,16 @@ class DashboardScreen extends ConsumerWidget {
             elevation: 0,
             icon: const Icon(Icons.upload_file_rounded, size: 18),
             label: Text('Subir cartola', style: AppText.body(14, weight: FontWeight.w600)),
+          ),
+          const SizedBox(width: 10),
+          FloatingActionButton.extended(
+            heroTag: 'boleta',
+            onPressed: () => _escanearBoleta(context, ref),
+            backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+            foregroundColor: AppColors.accent,
+            elevation: 0,
+            icon: const Icon(Icons.receipt_long_rounded, size: 18),
+            label: Text('Boleta', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.accent)),
           ),
           const SizedBox(width: 10),
           FloatingActionButton.extended(
