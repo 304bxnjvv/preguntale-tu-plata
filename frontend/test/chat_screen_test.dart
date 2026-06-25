@@ -38,4 +38,18 @@ void main() {
 
     expect(find.textContaining('pregúntame lo que quieras'), findsOneWidget);
   });
+
+  testWidgets('empty state muestra hint de gasto al toque', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        chatHistoryProvider.overrideWith((ref) async => const <ChatMessage>[]),
+      ],
+      child: const MaterialApp(home: ChatScreen()),
+    ));
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.textContaining('gasté 5 lucas'), findsOneWidget);
+  });
 }

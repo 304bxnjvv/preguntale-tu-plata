@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import '../providers/data_providers.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -46,11 +47,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _enviar() async {
     final q = _input.text.trim();
     if (q.isEmpty || _cargando) return;
-    setState(() { _msgs.add(_Msg(q, true)); _cargando = true; });
+    setState(() {
+      _msgs.add(_Msg(q, true));
+      _cargando = true;
+    });
     _input.clear();
     try {
       final r = await ref.read(apiProvider).ask(q);
       setState(() => _msgs.add(_Msg(r.answer, false)));
+      // Refresh dashboard data — the backend may have logged an expense.
+      ref.invalidate(summaryProvider);
+      ref.invalidate(transactionsProvider);
+      ref.invalidate(suscripcionesProvider);
     } on ApiException catch (e) {
       setState(() => _msgs.add(_Msg(e.message, false)));
     } finally {
@@ -101,7 +109,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                       ),
           ),
-          _InputBar(controller: _input, cargando: _cargando, onEnviar: _enviar),
+          _InputBar(
+            controller: _input,
+            cargando: _cargando,
+            onEnviar: _enviar,
+          ),
         ],
       ),
     );
@@ -129,6 +141,12 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               'tipo: "¿en qué se me fue la plata este mes?"',
+              style: AppText.body(14, color: AppColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'o anota un gasto al toque: "gasté 5 lucas en almuerzo"',
               style: AppText.body(14, color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),
@@ -234,7 +252,7 @@ class _ThinkingBubble extends StatelessWidget {
 
 // ── Input bar ────────────────────────────────────────────────────────────────
 
-class _InputBar extends StatelessWidget {
+class _InputBar extends StatefulWidget {
   final TextEditingController controller;
   final bool cargando;
   final VoidCallback onEnviar;
@@ -246,8 +264,80 @@ class _InputBar extends StatelessWidget {
   });
 
   @override
+  State<_InputBar> createState() => _InputBarState();
+}
+
+class _InputBarState extends State<_InputBar> {
+  final SpeechToText _speech = SpeechToText();
+
+  /// null = not yet probed; false = unavailable (hide button); true = available.
+  bool? _speechAvailable;
+  bool _escuchando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _probeSpeech();
+  }
+
+  Future<void> _probeSpeech() async {
+    try {
+      final ok = await _speech.initialize();
+      if (mounted) setState(() => _speechAvailable = ok);
+    } catch (_) {
+      // Web or restricted platform — hide the mic silently.
+      if (mounted) setState(() => _speechAvailable = false);
+    }
+  }
+
+  Future<void> _toggleMic() async {
+    if (_escuchando) {
+      await _speech.stop();
+      if (mounted) setState(() => _escuchando = false);
+      return;
+    }
+    try {
+      setState(() => _escuchando = true);
+      await _speech.listen(
+        onResult: (result) {
+          if (result.finalResult && result.recognizedWords.isNotEmpty) {
+            widget.controller.text = result.recognizedWords;
+            // Place cursor at end.
+            widget.controller.selection = TextSelection.fromPosition(
+              TextPosition(offset: widget.controller.text.length),
+            );
+          }
+        },
+        listenOptions: SpeechListenOptions(
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 5),
+          localeId: 'es_CL',
+        ),
+      );
+    } catch (_) {
+      // If listening fails for any reason, just reset.
+      if (mounted) setState(() => _escuchando = false);
+    }
+
+    // When the speech engine finishes (naturally or via timeout), reset flag.
+    _speech.statusListener = (status) {
+      if (status == 'done' || status == 'notListening') {
+        if (mounted) setState(() => _escuchando = false);
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    _speech.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final showMic = _speechAvailable == true;
+
     return Container(
       padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottom),
       decoration: const BoxDecoration(
@@ -258,8 +348,8 @@ class _InputBar extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
-              controller: controller,
-              onSubmitted: (_) => onEnviar(),
+              controller: widget.controller,
+              onSubmitted: (_) => widget.onEnviar(),
               style: AppText.body(16),
               decoration: InputDecoration(
                 hintText: '¿cuánto gasté este mes?',
@@ -267,16 +357,47 @@ class _InputBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          // Mic button — only shown when speech_to_text initialized OK.
+          if (showMic) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: Material(
+                color: _escuchando
+                    ? AppColors.primary
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _toggleMic,
+                  child: Center(
+                    child: Icon(
+                      _escuchando
+                          ? Icons.mic_rounded
+                          : Icons.mic_none_rounded,
+                      color: _escuchando
+                          ? AppColors.onPrimary
+                          : AppColors.textMuted,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 8),
           SizedBox(
             width: 48,
             height: 48,
             child: Material(
-              color: cargando ? AppColors.primary.withValues(alpha: 0.4) : AppColors.primary,
+              color: widget.cargando
+                  ? AppColors.primary.withValues(alpha: 0.4)
+                  : AppColors.primary,
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-                onTap: cargando ? null : onEnviar,
+                onTap: widget.cargando ? null : widget.onEnviar,
                 child: Center(
                   child: Icon(
                     Icons.arrow_upward_rounded,
