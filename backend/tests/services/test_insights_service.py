@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 import app.db.models  # noqa: F401
 from app.db.base import Base
 from app.db.models import Transaction
-from app.services.insights_service import comparativo_mensual, detectar_suscripciones
+from app.services.insights_service import comparativo_mensual, detectar_suscripciones, calcular_finscore
 
 
 # ---------------------------------------------------------------------------
@@ -210,3 +210,160 @@ def test_comparativo_ingresos_no_cuentan(session):
 
     result = comparativo_mensual(session, "u1")
     assert result["gastos_actual"] == pytest.approx(12000)
+
+
+# ---------------------------------------------------------------------------
+# calcular_finscore
+# ---------------------------------------------------------------------------
+
+def _today_90d():
+    """Date 45 days ago — safely within the 90-day window."""
+    return date.today() - timedelta(days=45)
+
+
+def test_finscore_sin_ingresos_devuelve_50(session):
+    """Sin transacciones → score=50, nivel='sin datos'."""
+    result = calcular_finscore(session, "u1")
+    assert result["score"] == 50
+    assert result["nivel"] == "sin datos"
+    assert result["factores"] == []
+    assert "necesito más datos" in result["resumen"].lower()
+    assert result["tasa_ahorro"] == 0.0
+
+
+def test_finscore_ahorro_alto_nivel_vas_bien(session):
+    """Ahorra 30% → score alto, nivel 'vas bien'."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 1_000_000, None)    # ingreso
+    _add(session, "u1", d, "Gastos", -700_000, "Comida")  # gasto
+    # tasa_ahorro = 0.30 → score = clamp(55 + 0.30*130, 5, 99) = clamp(94, …) = 94
+    result = calcular_finscore(session, "u1")
+    assert result["score"] >= 75
+    assert result["nivel"] == "vas bien"
+    assert result["tasa_ahorro"] == pytest.approx(0.30)
+
+
+def test_finscore_gasta_mas_que_ingresa_nivel_alerta(session):
+    """Gasta más de lo que ingresa → score bajo, nivel 'alerta'."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 500_000, None)
+    _add(session, "u1", d, "Gastos", -700_000, "Comida")  # tasa_ahorro = -0.40
+    # score = clamp(55 + (-0.40)*130, 5, 99) = clamp(3, …) = 5
+    result = calcular_finscore(session, "u1")
+    assert result["score"] < 50
+    assert result["nivel"] == "alerta"
+    assert result["tasa_ahorro"] < 0
+
+
+def test_finscore_nivel_ojo_rango_medio(session):
+    """Ahorra 0% exacto → score=55, nivel 'ojo'."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 800_000, None)
+    _add(session, "u1", d, "Gastos", -800_000, "Comida")  # tasa_ahorro = 0.0
+    # score = clamp(55 + 0*130, 5, 99) = 55
+    result = calcular_finscore(session, "u1")
+    assert 50 <= result["score"] < 75
+    assert result["nivel"] == "ojo"
+
+
+def test_finscore_suscripciones_altas_bajan_score(session):
+    """Suscripciones >15% del ingreso restan 8 puntos."""
+    d = _today_90d()
+    # Ingreso = 100_000; suscripciones = 20_000 (20% > 15%) → -8
+    _add(session, "u1", d, "Sueldo", 100_000, None)
+    _add(session, "u1", d, "Netflix", -20_000, "Suscripciones")
+
+    # Without subscription penalty
+    result = calcular_finscore(session, "u1")
+
+    # gastos=20000, ingresos=100000, tasa_ahorro=0.80
+    # base = clamp(55+0.80*130,5,99) = clamp(159,5,99) = 99
+    # susc/ingresos = 20000/100000 = 0.20 > 0.15 → -8 → 91
+    assert result["score"] == 91
+    # Check factores contain a subscription penalty
+    signos_negativos = [f for f in result["factores"] if f["signo"] == "-"]
+    assert any("suscripci" in f["texto"].lower() for f in signos_negativos)
+
+
+def test_finscore_suscripciones_bajas_no_penalizan(session):
+    """Suscripciones <=15% del ingreso → sin penalización."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 1_000_000, None)
+    _add(session, "u1", d, "Netflix", -10_000, "Suscripciones")  # 1% < 15%
+
+    result_sin = calcular_finscore(session, "u1")
+
+    # Base score sin penalización:
+    # gastos=10_000, ingresos=1_000_000, tasa_ahorro=0.99
+    # clamp(55+0.99*130,5,99)=clamp(183.7,5,99)=99; susc ratio=0.01 → no penalty
+    assert result_sin["score"] == 99
+
+
+def test_finscore_factores_no_vacios_con_datos(session):
+    """Con datos reales, factores debe tener al menos 1 elemento."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 500_000, None)
+    _add(session, "u1", d, "Gastos", -300_000, "Comida")
+    result = calcular_finscore(session, "u1")
+    assert len(result["factores"]) >= 1
+    for f in result["factores"]:
+        assert "texto" in f
+        assert f["signo"] in ("+", "-")
+
+
+def test_finscore_solo_considera_ultimos_90_dias(session):
+    """Transacciones fuera de los 90 días no cuentan."""
+    old_date = date.today() - timedelta(days=120)
+    recent_date = date.today() - timedelta(days=10)
+
+    # Old transactions (outside window) — huge income, big spend
+    _add(session, "u1", old_date, "Sueldo antiguo", 10_000_000, None)
+    _add(session, "u1", old_date, "Gastos antiguos", -9_000_000, "Comida")
+
+    # Recent transactions (inside window) — good savings
+    _add(session, "u1", recent_date, "Sueldo reciente", 1_000_000, None)
+    _add(session, "u1", recent_date, "Gastos recientes", -200_000, "Comida")
+
+    result = calcular_finscore(session, "u1")
+    # tasa_ahorro should be based only on recent: (1M-200k)/1M = 0.80, not the old ones
+    assert result["tasa_ahorro"] == pytest.approx(0.80)
+
+
+def test_finscore_aislado_por_user_id(session):
+    """Datos de otro user no afectan el score."""
+    d = _today_90d()
+    _add(session, "u2", d, "Sueldo", 1_000_000, None)
+    _add(session, "u2", d, "Gastos", -900_000, "Comida")
+
+    result = calcular_finscore(session, "u1")  # u1 has no data
+    assert result["score"] == 50
+    assert result["nivel"] == "sin datos"
+
+
+def test_finscore_score_clamped_at_5_minimum(session):
+    """Score nunca baja de 5 aunque gaste muchísimo más de lo que ingresa."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 100_000, None)
+    _add(session, "u1", d, "Gastos", -1_000_000, "Comida")  # tasa_ahorro = -9.0
+    # score = clamp(55 + (-9)*130, 5, 99) = clamp(-1115, 5, 99) = 5
+    result = calcular_finscore(session, "u1")
+    assert result["score"] == 5
+
+
+def test_finscore_score_clamped_at_99_maximum(session):
+    """Score nunca supera 99 aunque ahorre casi todo."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 1_000_000, None)
+    _add(session, "u1", d, "Gastos", -1_000, "Comida")  # tasa_ahorro ≈ 0.999
+    result = calcular_finscore(session, "u1")
+    assert result["score"] <= 99
+
+
+def test_finscore_resumen_presente(session):
+    """resumen siempre es una cadena no vacía."""
+    d = _today_90d()
+    _add(session, "u1", d, "Sueldo", 500_000, None)
+    _add(session, "u1", d, "Gastos", -250_000, "Comida")
+    result = calcular_finscore(session, "u1")
+    assert isinstance(result["resumen"], str)
+    assert len(result["resumen"]) > 0

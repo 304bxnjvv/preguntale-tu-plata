@@ -134,3 +134,16 @@ class WebhookOut(BaseModel):
 
 class CancelOut(BaseModel):
     estado: str
+
+
+class FinScoreFactor(BaseModel):
+    texto: str
+    signo: str  # "+" | "-"
+
+
+class FinScoreResponse(BaseModel):
+    score: int
+    nivel: str        # "vas bien" | "ojo" | "alerta" | "sin datos"
+    resumen: str
+    factores: list[FinScoreFactor]
+    tasa_ahorro: float

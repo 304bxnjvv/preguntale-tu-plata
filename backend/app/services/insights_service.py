@@ -1,10 +1,10 @@
 """
-Insights service: subscription detection + month-over-month comparison.
+Insights service: subscription detection + month-over-month comparison + FinScore.
 """
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -199,4 +199,137 @@ def comparativo_mensual(session: Session, user_id: str) -> dict:
         "gastos_anterior": gastos_anterior,
         "delta": gastos_actual - gastos_anterior,
         "top_cambios": top_cambios,
+    }
+
+
+# ---------------------------------------------------------------------------
+# calcular_finscore
+# ---------------------------------------------------------------------------
+
+def calcular_finscore(session: Session, user_id: str) -> dict:
+    """Calculate a heuristic financial health score (0-100) for *user_id*.
+
+    FORMULA (heuristic — adjust multipliers as business data matures):
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Window: últimos 90 días (o toda la historia si hay menos datos).
+    1. ``ingresos`` = sum of monto where monto > 0.
+       ``gastos``   = sum of |monto| where monto < 0.
+    2. If ingresos == 0: score=50, nivel='sin datos' — no meaningful signal.
+    3. tasa_ahorro = (ingresos - gastos) / ingresos.
+       score_base = clamp(round(55 + tasa_ahorro * 130), 5, 99)
+       Examples: ahorro 0% → 55; ahorro 20% → 81; gasto -40% sobre ingreso → 3 → clamp 5.
+    4. Subscription modifier:
+       susc = detectar_suscripciones(...)["total_mensual"]
+       If susc / ingresos > 0.15 → score -= 8
+    5. Final score = clamp(score, 5, 99).
+    6. nivel: score >= 75 → "vas bien"; 50-74 → "ojo"; < 50 → "alerta".
+    7. factores: list of 2-4 {"texto": str, "signo": "+"|"-"} in Chilean Spanish.
+
+    Returns:
+        {
+            "score": int,
+            "nivel": str,         # "vas bien" | "ojo" | "alerta" | "sin datos"
+            "resumen": str,       # warm one-liner
+            "factores": list[dict],
+            "tasa_ahorro": float,
+        }
+    """
+    cutoff = date.today() - timedelta(days=90)
+
+    ingresos_raw = (
+        session.query(func.sum(Transaction.monto))
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.monto > 0)
+        .filter(Transaction.fecha >= cutoff)
+        .scalar()
+    )
+    gastos_raw = (
+        session.query(func.sum(Transaction.monto))
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.monto < 0)
+        .filter(Transaction.fecha >= cutoff)
+        .scalar()
+    )
+
+    ingresos = float(ingresos_raw) if ingresos_raw else 0.0
+    gastos = abs(float(gastos_raw)) if gastos_raw else 0.0
+
+    if ingresos == 0:
+        return {
+            "score": 50,
+            "nivel": "sin datos",
+            "resumen": "necesito más datos para calcular tu salud financiera",
+            "factores": [],
+            "tasa_ahorro": 0.0,
+        }
+
+    tasa_ahorro = (ingresos - gastos) / ingresos
+
+    score = max(5, min(99, round(55 + tasa_ahorro * 130)))
+
+    # Subscription modifier
+    susc = detectar_suscripciones(session, user_id)["total_mensual"]
+    susc_penalizado = susc / ingresos > 0.15
+
+    if susc_penalizado:
+        score = max(5, min(99, score - 8))
+
+    # Nivel
+    if score >= 75:
+        nivel = "vas bien"
+        resumen = "¡Vas por buen camino! Sigue así y tu billetera lo va a agradecer."
+    elif score >= 50:
+        nivel = "ojo"
+        resumen = "Tu situación está okay, pero hay espacio para mejorar."
+    else:
+        nivel = "alerta"
+        resumen = "Ojo, estás gastando más de lo que entra. Revisemos juntos tus gastos."
+
+    # Factores
+    factores: list[dict] = []
+
+    ahorro_pct = round(tasa_ahorro * 100, 1)
+    if tasa_ahorro >= 0:
+        factores.append({
+            "texto": f"ahorras el {ahorro_pct}% de lo que ganas",
+            "signo": "+" if tasa_ahorro > 0 else "-",
+        })
+    else:
+        factores.append({
+            "texto": f"gastaste un {abs(ahorro_pct)}% más de lo que ingresó",
+            "signo": "-",
+        })
+
+    if susc > 0:
+        susc_fmt = f"${susc:,.0f}".replace(",", ".")
+        if susc_penalizado:
+            factores.append({
+                "texto": f"{susc_fmt}/mes en suscripciones (más del 15% de tu ingreso)",
+                "signo": "-",
+            })
+        else:
+            factores.append({
+                "texto": f"{susc_fmt}/mes en suscripciones, dentro de lo razonable",
+                "signo": "+",
+            })
+
+    if ingresos > 0 and gastos > 0:
+        ratio = gastos / ingresos
+        if ratio < 0.6:
+            factores.append({
+                "texto": "tus gastos son controlados respecto a tus ingresos",
+                "signo": "+",
+            })
+        elif ratio > 1.0:
+            factores.append({
+                "texto": "gastaste más de lo que ingresó este período",
+                "signo": "-",
+            })
+
+    return {
+        "score": score,
+        "nivel": nivel,
+        "resumen": resumen,
+        "factores": factores,
+        "tasa_ahorro": tasa_ahorro,
     }

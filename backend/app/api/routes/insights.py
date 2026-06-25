@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.auth.jwt import get_current_user
 from app.db.base import get_session
-from app.models.schemas import SuscripcionesResponse, ComparativoResponse
-from app.services.insights_service import detectar_suscripciones, comparativo_mensual
+from app.models.schemas import SuscripcionesResponse, ComparativoResponse, FinScoreResponse
+from app.services.insights_service import detectar_suscripciones, comparativo_mensual, calcular_finscore
 
 router = APIRouter()
 
@@ -25,3 +25,12 @@ async def get_comparativo(
 ):
     data = comparativo_mensual(session, user_id)
     return ComparativoResponse(**data)
+
+
+@router.get("/insights/finscore", response_model=FinScoreResponse)
+async def get_finscore(
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    data = calcular_finscore(session, user_id)
+    return FinScoreResponse(**data)

@@ -70,3 +70,45 @@ def test_comparativo_requires_auth():
     c = TestClient(app)
     r = c.get("/api/v1/insights/comparativo")
     assert r.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# GET /insights/finscore
+# ---------------------------------------------------------------------------
+
+def test_finscore_returns_200(client):
+    r = client.get("/api/v1/insights/finscore")
+    assert r.status_code == 200
+
+
+def test_finscore_shape(client):
+    r = client.get("/api/v1/insights/finscore")
+    body = r.json()
+    assert "score" in body
+    assert "nivel" in body
+    assert "resumen" in body
+    assert "factores" in body
+    assert "tasa_ahorro" in body
+
+
+def test_finscore_no_data_returns_50(client):
+    """Sin transacciones → score 50, nivel 'sin datos'."""
+    r = client.get("/api/v1/insights/finscore")
+    body = r.json()
+    assert body["score"] == 50
+    assert body["nivel"] == "sin datos"
+    assert body["factores"] == []
+
+
+def test_finscore_score_is_int_in_range(client):
+    r = client.get("/api/v1/insights/finscore")
+    body = r.json()
+    assert isinstance(body["score"], int)
+    assert 5 <= body["score"] <= 99 or body["score"] == 50
+
+
+def test_finscore_requires_auth():
+    app.dependency_overrides.clear()
+    c = TestClient(app)
+    r = c.get("/api/v1/insights/finscore")
+    assert r.status_code in (401, 403)
