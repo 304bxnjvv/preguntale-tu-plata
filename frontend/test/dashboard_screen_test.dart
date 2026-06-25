@@ -30,6 +30,15 @@ List<Override> _insightsOverrides() => [
             factores: [],
             tasaAhorro: 0,
           )),
+      tarjetaProvider.overrideWith((ref) async => const TarjetaEstado(
+            tieneDatos: false,
+            totalAPagar: 0,
+            montoMinimo: 0,
+            cupoTotal: 0,
+            cupoUtilizado: 0,
+            comprometidoProximoMes: 0,
+            cuotas: [],
+          )),
     ];
 
 void main() {
@@ -162,6 +171,15 @@ void main() {
             )),
         finScoreProvider.overrideWith((ref) async => const FinScore(
               score: 0, nivel: 'sin datos', resumen: '', factores: [], tasaAhorro: 0)),
+        tarjetaProvider.overrideWith((ref) async => const TarjetaEstado(
+              tieneDatos: false,
+              totalAPagar: 0,
+              montoMinimo: 0,
+              cupoTotal: 0,
+              cupoUtilizado: 0,
+              comprometidoProximoMes: 0,
+              cuotas: [],
+            )),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
@@ -186,6 +204,15 @@ void main() {
             )),
         finScoreProvider.overrideWith((ref) async => const FinScore(
               score: 0, nivel: 'sin datos', resumen: '', factores: [], tasaAhorro: 0)),
+        tarjetaProvider.overrideWith((ref) async => const TarjetaEstado(
+              tieneDatos: false,
+              totalAPagar: 0,
+              montoMinimo: 0,
+              cupoTotal: 0,
+              cupoUtilizado: 0,
+              comprometidoProximoMes: 0,
+              cuotas: [],
+            )),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));

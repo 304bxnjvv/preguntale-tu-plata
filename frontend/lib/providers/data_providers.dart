@@ -7,10 +7,12 @@ import '../models/transaction.dart';
 import '../models/dashboard_filter.dart';
 import '../models/insights.dart';
 import '../models/finscore.dart';
+import '../models/tarjeta.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 export '../services/api_service.dart' show Subscription;
 export '../models/finscore.dart' show FinScore, FinFactor;
+export '../models/tarjeta.dart' show TarjetaEstado, Cuota;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -46,4 +48,8 @@ final subscriptionProvider = FutureProvider<Subscription>((ref) {
 
 final finScoreProvider = FutureProvider<FinScore>((ref) {
   return ref.watch(apiProvider).getFinScore();
+});
+
+final tarjetaProvider = FutureProvider<TarjetaEstado>((ref) {
+  return ref.watch(apiProvider).getTarjeta();
 });

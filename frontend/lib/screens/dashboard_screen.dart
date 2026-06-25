@@ -11,6 +11,7 @@ import '../widgets/summary_card.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/gastos_dona.dart';
 import '../widgets/finscore_card.dart';
+import '../widgets/tarjeta_card.dart';
 
 void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(summaryProvider);
@@ -18,6 +19,7 @@ void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(suscripcionesProvider);
   ref.invalidate(comparativoProvider);
   ref.invalidate(finScoreProvider);
+  ref.invalidate(tarjetaProvider);
 }
 
 class DashboardScreen extends ConsumerWidget {
@@ -98,6 +100,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(suscripcionesProvider);
           ref.invalidate(comparativoProvider);
           ref.invalidate(finScoreProvider);
+          ref.invalidate(tarjetaProvider);
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
@@ -136,6 +139,8 @@ class DashboardScreen extends ConsumerWidget {
                       child: FinScoreCard(data: fs),
                     ),
             ),
+            // Tarjeta de crédito — hidden when tiene_datos == false
+            const TarjetaCard(),
             summary.when(
               loading: () => const Center(
                 child: Padding(

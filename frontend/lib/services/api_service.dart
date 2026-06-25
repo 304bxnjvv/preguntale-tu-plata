@@ -7,6 +7,7 @@ import '../models/transaction.dart';
 import '../models/summary.dart';
 import '../models/insights.dart';
 import '../models/finscore.dart';
+import '../models/tarjeta.dart';
 
 class Subscription {
   final String estado;
@@ -129,6 +130,17 @@ class ApiService {
       return FinScore.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
     }
     throw ApiException('No se pudo cargar el FinScore', res.statusCode);
+  }
+
+  Future<TarjetaEstado> getTarjeta() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/tarjeta'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return TarjetaEstado.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo cargar la tarjeta', res.statusCode);
   }
 
   Future<Comparativo> getComparativo() async {
