@@ -30,3 +30,13 @@ class Upload(Base):
     n_transacciones = Column(Integer, nullable=False, default=0)
     fuente = Column(String, nullable=False, default="cartola")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, index=True)
+    role = Column(String, nullable=False)  # 'user' | 'assistant'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

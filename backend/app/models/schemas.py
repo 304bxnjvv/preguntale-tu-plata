@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, field_validator
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 
@@ -76,3 +76,17 @@ class SummaryResponse(BaseModel):
     por_moneda: dict[str, MonedaTotales]
     gastos_por_categoria: list[CategoriaTotal]
     gastos_por_banco: list[BancoTotal]
+
+
+class ChatMessageOut(BaseModel):
+    id: str
+    role: str
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def _id_to_str(cls, v):
+        return str(v)

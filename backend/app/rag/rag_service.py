@@ -11,7 +11,7 @@ Eres un asistente financiero personal para usuarios chilenos.
 Responde en español, con montos en pesos chilenos (CLP).
 Basa tu respuesta ÚNICAMENTE en las transacciones del contexto.
 Si no hay información suficiente, dilo claramente.
-
+{history_block}
 Transacciones relevantes:
 {context}
 
@@ -59,15 +59,33 @@ def indexar_transacciones(transacciones: list[Transaccion], user_id: str) -> int
     return len(docs)
 
 
-def ask(question: str, user_id: str) -> AskResponse:
+def _build_history_block(history: list[tuple[str, str]] | None) -> str:
+    """Render the 'Conversación previa' block for prompt injection, or empty string."""
+    if not history:
+        return ""
+    role_labels = {"user": "Usuario", "assistant": "Asistente"}
+    lines = "\n".join(
+        f"{role_labels.get(role, role)}: {content}" for role, content in history
+    )
+    return f"\nConversación previa:\n{lines}\n"
+
+
+def ask(
+    question: str,
+    user_id: str,
+    history: list[tuple[str, str]] | None = None,
+) -> AskResponse:
     vs = get_vector_store()
     docs = vs.similarity_search(
         question, k=settings.rag_top_k, filter={"user_id": user_id}
     )
 
     context = "\n".join(f"- {d.page_content}" for d in docs)
+    history_block = _build_history_block(history)
     chain = PROMPT | _llm()
-    answer = chain.invoke({"context": context, "question": question})
+    answer = chain.invoke(
+        {"context": context, "question": question, "history_block": history_block}
+    )
 
     citations = [
         TransaccionCitada(
