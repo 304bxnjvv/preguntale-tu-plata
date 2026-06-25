@@ -11,6 +11,7 @@ from app.auth.jwt import get_current_user
 from app.db.base import get_session
 from app.services.extraction_service import extract_from_file
 from app.services.upload_limit import check_limit, log_upload, UploadLimitError
+from app.services.demo_service import clear_demo
 
 router = APIRouter()
 
@@ -76,6 +77,8 @@ async def upload_universal(
     nuevas = insert_transactions(session, user_id, transacciones, fuente="cartola")
     if nuevas:
         indexar_transacciones(nuevas, user_id)
+        # Auto-clear demo rows now that the user has real cartola data.
+        clear_demo(session, user_id)
     # El LLM ya se invocó (costo) → la subida cuenta contra el límite, haya o no transacciones.
     log_upload(session, user_id, filename, len(nuevas))
 

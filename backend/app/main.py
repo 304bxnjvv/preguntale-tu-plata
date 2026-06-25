@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import upload, ask, insights
 from app.api.routes.demo import router as demo_router
 from app.api.routes.account import router as account_router
+from app.api.routes.subscription import router as subscription_router
 
 app = FastAPI(
     title="Pregúntale a tu plata API",
@@ -22,6 +23,7 @@ app.include_router(ask.router, prefix="/api/v1", tags=["ask"])
 app.include_router(insights.router, prefix="/api/v1", tags=["insights"])
 app.include_router(demo_router, prefix="/api/v1")
 app.include_router(account_router, prefix="/api/v1")
+app.include_router(subscription_router, prefix="/api/v1")
 
 
 @app.get("/health")

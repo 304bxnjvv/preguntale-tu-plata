@@ -115,3 +115,22 @@ class ComparativoResponse(BaseModel):
     gastos_anterior: float
     delta: float
     top_cambios: list[TopCambio]
+
+
+class SubscriptionOut(BaseModel):
+    estado: str
+    dias_restantes: int
+    trial_ends_at: Optional[datetime]
+    precio_clp: int = 3990
+
+
+class CheckoutOut(BaseModel):
+    url: str
+
+
+class WebhookOut(BaseModel):
+    ok: bool
+
+
+class CancelOut(BaseModel):
+    estado: str

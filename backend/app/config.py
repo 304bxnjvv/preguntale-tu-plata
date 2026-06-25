@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     supabase_url: str
     deepseek_api_key: str = ""  # opcional (legacy; el LLM ahora es OpenAI)
 
+    flow_api_key: str = ""
+    flow_secret: str = ""
+
     llm_model: str = "gpt-4o-mini"
     embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     rag_top_k: int = 6

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, Numeric, Date, DateTime, Integer
+from sqlalchemy import Column, String, Text, Numeric, Date, DateTime, Integer, UniqueConstraint
 from app.db.base import Base
 
 
@@ -39,4 +39,15 @@ class ChatMessage(Base):
     user_id = Column(String(36), nullable=False, index=True)
     role = Column(String, nullable=False)  # 'user' | 'assistant'
     content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, unique=True, index=True)
+    estado = Column(String, nullable=False, default="trial")  # trial|activa|cancelada|vencida
+    trial_ends_at = Column(DateTime(timezone=True), nullable=True)
+    periodo_fin = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
