@@ -227,3 +227,13 @@ class TarjetaEstadoResponse(BaseModel):
     cupo_utilizado: float
     comprometido_proximo_mes: float
     cuotas: list[dict]
+
+
+class ResumenSemanalResponse(BaseModel):
+    tiene_datos: bool
+    periodo: str
+    gasto_semana: float
+    top_categoria: Optional[str]
+    top_monto: float
+    delta_pct: Optional[float]
+    texto: str

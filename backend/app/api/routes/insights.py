@@ -9,10 +9,12 @@ from app.models.schemas import (
     FinScoreResponse,
     TarjetaEstadoResponse,
     AlertasResponse,
+    ResumenSemanalResponse,
 )
 from app.services.insights_service import detectar_suscripciones, comparativo_mensual, calcular_finscore
 from app.services.tarjeta_service import get_estado
 from app.services.alertas_service import evaluar_alertas
+from app.services.resumen_semanal_service import generar_resumen
 
 router = APIRouter()
 
@@ -58,3 +60,12 @@ async def get_alertas(
     session: Session = Depends(get_session),
 ):
     return AlertasResponse(items=evaluar_alertas(session, user_id))
+
+
+@router.get("/insights/resumen-semanal", response_model=ResumenSemanalResponse)
+async def get_resumen_semanal(
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    data = generar_resumen(session, user_id)
+    return ResumenSemanalResponse(**data)
