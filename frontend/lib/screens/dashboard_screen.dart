@@ -20,6 +20,7 @@ class DashboardScreen extends ConsumerWidget {
     final txns = ref.watch(transactionsProvider);
     final suscripciones = ref.watch(suscripcionesProvider);
     final comparativo = ref.watch(comparativoProvider);
+    final subscription = ref.watch(subscriptionProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -85,6 +86,28 @@ class DashboardScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
+            // Subscription banner (soft — never blocks the app)
+            subscription.whenOrNull(
+              data: (sub) {
+                if (sub.estado == 'trial') {
+                  return _SubscriptionBanner(
+                    color: AppColors.accent,
+                    icon: Icons.hourglass_top_rounded,
+                    message: 'te quedan ${sub.diasRestantes} días de prueba',
+                    onTap: () => context.push('/suscripcion'),
+                  );
+                }
+                if (sub.estado == 'vencida') {
+                  return _SubscriptionBanner(
+                    color: AppColors.negative,
+                    icon: Icons.lock_clock_outlined,
+                    message: 'tu prueba terminó — suscríbete',
+                    onTap: () => context.push('/suscripcion'),
+                  );
+                }
+                return null;
+              },
+            ) ?? const SizedBox.shrink(),
             summary.when(
               loading: () => const Center(
                 child: Padding(
@@ -506,4 +529,64 @@ class _ErrorBox extends StatelessWidget {
           ],
         ),
       );
+}
+
+// ── Subscription banner ───────────────────────────────────────────────────────
+
+class _SubscriptionBanner extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final String message;
+  final VoidCallback onTap;
+
+  const _SubscriptionBanner({
+    required this.color,
+    required this.icon,
+    required this.message,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppText.body(14, weight: FontWeight.w500, color: color),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'ver plan',
+                  style: AppText.body(12, weight: FontWeight.w700, color: color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

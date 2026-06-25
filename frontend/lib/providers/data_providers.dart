@@ -8,6 +8,7 @@ import '../models/dashboard_filter.dart';
 import '../models/insights.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
+export '../services/api_service.dart' show Subscription;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -35,4 +36,8 @@ final suscripcionesProvider = FutureProvider<Suscripciones>((ref) {
 
 final comparativoProvider = FutureProvider<Comparativo>((ref) {
   return ref.watch(apiProvider).getComparativo();
+});
+
+final subscriptionProvider = FutureProvider<Subscription>((ref) {
+  return ref.watch(apiProvider).getSubscription();
 });

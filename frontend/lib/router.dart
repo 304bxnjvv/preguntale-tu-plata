@@ -8,6 +8,8 @@ import 'screens/chat_screen.dart';
 import 'screens/upload_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/paywall_screen.dart';
+import 'screens/consent_screen.dart';
 
 /// Función pura: dado el estado de sesión y la ubicación actual, devuelve la
 /// ruta a la que redirigir, o null si no hay que redirigir.
@@ -33,6 +35,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/upload', builder: (_, __) => const UploadScreen()),
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/ajustes', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/suscripcion', builder: (_, __) => const PaywallScreen()),
+      GoRoute(path: '/suscripcion/consentimiento', builder: (_, __) => const ConsentScreen()),
     ],
   );
 });

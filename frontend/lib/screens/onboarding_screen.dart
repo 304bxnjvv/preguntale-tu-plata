@@ -200,7 +200,7 @@ class _StepBienvenida extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'no le pedimos permiso a tu banco. solo los archivos que tú subes. tus datos se borran a los 30 días o cuando tú quieras.',
+                  'no le pedimos permiso a tu banco. solo los archivos que tú subes. tus datos se borran a 1 año o cuando tú quieras.',
                   style: AppText.body(15, color: AppColors.textMuted),
                 ),
               ],

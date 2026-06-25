@@ -35,6 +35,11 @@ List<Override> _defaultProviders() => [
             gastosAnterior: 0,
             delta: 0,
           )),
+      subscriptionProvider.overrideWith((ref) async => const Subscription(
+            estado: 'trial',
+            diasRestantes: 28,
+            precioClp: 3990,
+          )),
     ];
 
 void main() {
@@ -117,7 +122,7 @@ void main() {
       expect(find.textContaining('no le pedimos permiso'), findsOneWidget);
     });
 
-    testWidgets('botón Eliminar mis datos muestra AlertDialog de confirmación',
+    testWidgets('botón Eliminar mis datos muestra AlertDialog con TextField',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -136,6 +141,43 @@ void main() {
       expect(find.text('eliminar mis datos'), findsOneWidget);
       expect(find.text('eliminar todo'), findsOneWidget);
       expect(find.text('cancelar'), findsOneWidget);
+      // TextField must be present
+      expect(find.byType(TextField), findsOneWidget);
+    });
+
+    testWidgets('botón eliminar deshabilitado hasta escribir "borrar"',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _defaultProviders(),
+          child: const _TestApp(child: SettingsScreen()),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Eliminar mis datos'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Button is disabled initially (null onPressed when text != 'borrar')
+      final btnBefore = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'eliminar todo'),
+      );
+      expect(btnBefore.onPressed, isNull);
+
+      // Type 'borrar'
+      await tester.enterText(find.byType(TextField), 'borrar');
+      await tester.pump();
+
+      final btnAfter = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'eliminar todo'),
+      );
+      expect(btnAfter.onPressed, isNotNull);
+
+      // Close dialog to avoid controller leak into next test
+      await tester.tap(find.text('cancelar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('cancelar en AlertDialog cierra el diálogo sin eliminar',

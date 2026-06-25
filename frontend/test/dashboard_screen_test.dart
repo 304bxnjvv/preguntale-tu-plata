@@ -18,6 +18,11 @@ List<Override> _insightsOverrides() => [
             gastosAnterior: 0,
             delta: 0,
           )),
+      subscriptionProvider.overrideWith((ref) async => const Subscription(
+            estado: 'activa',
+            diasRestantes: 0,
+            precioClp: 3990,
+          )),
     ];
 
 void main() {
@@ -115,6 +120,11 @@ void main() {
               gastosAnterior: 500000,
               delta: 100000,
             )),
+        subscriptionProvider.overrideWith((ref) async => const Subscription(
+              estado: 'activa',
+              diasRestantes: 0,
+              precioClp: 3990,
+            )),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     ));
@@ -123,5 +133,65 @@ void main() {
 
     expect(find.textContaining('vs mes pasado'), findsOneWidget);
     expect(find.textContaining('100.000'), findsOneWidget);
+  });
+
+  testWidgets('banner trial muestra días restantes cuando estado==trial', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        summaryProvider.overrideWith((ref) async => const Summary(
+              porMoneda: {}, gastosPorCategoria: [], gastosPorBanco: [])),
+        transactionsProvider.overrideWith((ref) async => const <Transaction>[]),
+        ..._insightsOverrides().take(2), // suscripciones + comparativo
+        subscriptionProvider.overrideWith((ref) async => const Subscription(
+              estado: 'trial',
+              diasRestantes: 14,
+              precioClp: 3990,
+            )),
+      ],
+      child: const MaterialApp(home: DashboardScreen()),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.textContaining('14 días de prueba'), findsOneWidget);
+    expect(find.textContaining('ver plan'), findsOneWidget);
+  });
+
+  testWidgets('banner vencida muestra mensaje cuando estado==vencida', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        summaryProvider.overrideWith((ref) async => const Summary(
+              porMoneda: {}, gastosPorCategoria: [], gastosPorBanco: [])),
+        transactionsProvider.overrideWith((ref) async => const <Transaction>[]),
+        ..._insightsOverrides().take(2),
+        subscriptionProvider.overrideWith((ref) async => const Subscription(
+              estado: 'vencida',
+              diasRestantes: 0,
+              precioClp: 3990,
+            )),
+      ],
+      child: const MaterialApp(home: DashboardScreen()),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.textContaining('tu prueba terminó'), findsOneWidget);
+    expect(find.textContaining('ver plan'), findsOneWidget);
+  });
+
+  testWidgets('sin banner cuando estado==activa', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        summaryProvider.overrideWith((ref) async => const Summary(
+              porMoneda: {}, gastosPorCategoria: [], gastosPorBanco: [])),
+        transactionsProvider.overrideWith((ref) async => const <Transaction>[]),
+        ..._insightsOverrides(),
+      ],
+      child: const MaterialApp(home: DashboardScreen()),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.textContaining('ver plan'), findsNothing);
   });
 }

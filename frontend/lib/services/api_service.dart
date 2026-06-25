@@ -7,6 +7,27 @@ import '../models/transaction.dart';
 import '../models/summary.dart';
 import '../models/insights.dart';
 
+class Subscription {
+  final String estado;
+  final int diasRestantes;
+  final String? trialEndsAt;
+  final int precioClp;
+
+  const Subscription({
+    required this.estado,
+    required this.diasRestantes,
+    this.trialEndsAt,
+    required this.precioClp,
+  });
+
+  factory Subscription.fromJson(Map<String, dynamic> j) => Subscription(
+        estado: j['estado'] as String,
+        diasRestantes: (j['dias_restantes'] as num).toInt(),
+        trialEndsAt: j['trial_ends_at'] as String?,
+        precioClp: (j['precio_clp'] as num).toInt(),
+      );
+}
+
 class ApiService {
   final http.Client _client;
   final String? Function() _token;
@@ -128,6 +149,45 @@ class ApiService {
     );
     if (res.statusCode != 200) {
       throw ApiException('No se pudo limpiar el demo', res.statusCode);
+    }
+  }
+
+  Future<Subscription> getSubscription() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/subscription'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return Subscription.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo cargar la suscripción', res.statusCode);
+  }
+
+  /// Returns the checkout URL, or throws ApiException(503) when payment is not configured.
+  Future<String> checkout() async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/subscription/checkout'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      return j['url'] as String;
+    }
+    throw ApiException(
+      res.statusCode == 503
+          ? 'pago no configurado'
+          : 'No se pudo iniciar el pago',
+      res.statusCode,
+    );
+  }
+
+  Future<void> cancelSubscription() async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/subscription/cancel'),
+      headers: _headers(),
+    );
+    if (res.statusCode != 200) {
+      throw ApiException('No se pudo cancelar la suscripción', res.statusCode);
     }
   }
 
