@@ -16,6 +16,7 @@ import '../widgets/tarjeta_card.dart';
 import '../widgets/presupuesto_card.dart';
 import '../widgets/meta_card.dart';
 import '../widgets/resumen_semanal_card.dart';
+import '../widgets/forecast_card.dart';
 import '../services/alertas_seen.dart';
 import '../services/notif_service.dart';
 
@@ -30,6 +31,7 @@ void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(metasProvider);
   ref.invalidate(alertasProvider);
   ref.invalidate(resumenSemanalProvider);
+  ref.invalidate(forecastProvider);
 }
 
 class DashboardScreen extends ConsumerWidget {
@@ -130,6 +132,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(metasProvider);
           ref.invalidate(alertasProvider);
           ref.invalidate(resumenSemanalProvider);
+          ref.invalidate(forecastProvider);
           await ref.read(transactionsProvider.future);
         },
         child: ListView(
@@ -172,6 +175,8 @@ class DashboardScreen extends ConsumerWidget {
             const TarjetaCard(),
             // Resumen semanal — card descartable, se oculta tras 7 días
             const ResumenSemanalCard(),
+            // Forecast fin de mes — proyección lineal
+            const ForecastCard(),
             // Presupuestos — resumen rápido, navega a /presupuestos
             const PresupuestoCard(),
             // Metas — resumen rápido, navega a /metas

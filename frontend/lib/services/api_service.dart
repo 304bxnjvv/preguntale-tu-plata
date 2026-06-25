@@ -12,6 +12,7 @@ import '../models/presupuesto.dart';
 import '../models/meta.dart';
 import '../models/alerta.dart';
 import '../models/resumen_semanal.dart';
+import '../models/forecast.dart';
 
 class Subscription {
   final String estado;
@@ -345,6 +346,17 @@ class ApiService {
       return ResumenSemanal.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
     }
     throw ApiException('No se pudo cargar el resumen semanal', res.statusCode);
+  }
+
+  Future<Forecast> getForecast() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/insights/forecast'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return Forecast.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudo cargar la proyección', res.statusCode);
   }
 
   Future<List<Alerta>> getAlertas() async {
