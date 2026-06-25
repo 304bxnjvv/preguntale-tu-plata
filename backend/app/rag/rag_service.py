@@ -134,6 +134,36 @@ def _build_resumen_block(session: Session | None, user_id: str) -> str:
         except Exception:
             pass
 
+        # Inject presupuestos cerca/excedido
+        try:
+            from app.services.presupuesto_service import estado_presupuestos
+            presupuestos = estado_presupuestos(session, user_id)
+            alertas_pres = [p for p in presupuestos if p["estado"] in ("cerca", "excedido")]
+            for p in alertas_pres:
+                pct_str = f"{p['pct'] * 100:.0f}%"
+                lines.append(
+                    f"- Presupuesto {p['categoria']}: {p['estado']} "
+                    f"(gastado ${p['gastado']:,.0f} de ${p['monto_tope']:,.0f}, {pct_str})"
+                )
+        except Exception:
+            pass
+
+        # Inject metas de ahorro
+        try:
+            from app.services.meta_service import listar_metas
+            metas = listar_metas(session, user_id)
+            for m in metas:
+                progreso_str = f"{m['progreso'] * 100:.0f}%"
+                linea = (
+                    f"- Meta '{m['nombre']}': {progreso_str} completada"
+                    f" (${m['monto_actual']:,.0f} de ${m['monto_objetivo']:,.0f})"
+                )
+                if m["aporte_mensual_necesario"] is not None:
+                    linea += f", aportar ~${m['aporte_mensual_necesario']:,.0f}/mes"
+                lines.append(linea)
+        except Exception:
+            pass
+
         return "\n".join(lines)
     except Exception:
         return ""
