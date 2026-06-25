@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config.dart';
 import 'router.dart';
+import 'services/notif_service.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -12,6 +14,10 @@ Future<void> main() async {
     // ignore: deprecated_member_use
     anonKey: Config.supabaseAnonKey,
   );
+  // Inicializar notificaciones locales solo en móvil.
+  if (!kIsWeb) {
+    await NotifService().init();
+  }
   runApp(const ProviderScope(child: PreguntaleApp()));
 }
 

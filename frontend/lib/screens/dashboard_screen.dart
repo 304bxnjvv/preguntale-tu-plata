@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../widgets/tarjeta_card.dart';
 import '../widgets/presupuesto_card.dart';
 import '../widgets/meta_card.dart';
 import '../services/alertas_seen.dart';
+import '../services/notif_service.dart';
 
 void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(summaryProvider);
@@ -39,6 +41,23 @@ class DashboardScreen extends ConsumerWidget {
     final comparativo = ref.watch(comparativoProvider);
     final subscription = ref.watch(subscriptionProvider);
     final finScore = ref.watch(finScoreProvider);
+
+    // Agendar notificación local de vencimiento de tarjeta (solo móvil).
+    if (!kIsWeb) {
+      ref.listen<AsyncValue<TarjetaEstado>>(tarjetaProvider, (_, next) {
+        next.whenData((tarjeta) {
+          if (tarjeta.tieneDatos && tarjeta.fechaVencimiento != null) {
+            final parts = tarjeta.fechaVencimiento!.split('-');
+            if (parts.length == 3) {
+              final fecha = DateTime.tryParse(tarjeta.fechaVencimiento!);
+              if (fecha != null) {
+                NotifService().agendarVencimiento(fecha, tarjeta.totalAPagar);
+              }
+            }
+          }
+        });
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
