@@ -47,12 +47,9 @@ class DashboardScreen extends ConsumerWidget {
       ref.listen<AsyncValue<TarjetaEstado>>(tarjetaProvider, (_, next) {
         next.whenData((tarjeta) {
           if (tarjeta.tieneDatos && tarjeta.fechaVencimiento != null) {
-            final parts = tarjeta.fechaVencimiento!.split('-');
-            if (parts.length == 3) {
-              final fecha = DateTime.tryParse(tarjeta.fechaVencimiento!);
-              if (fecha != null) {
-                NotifService().agendarVencimiento(fecha, tarjeta.totalAPagar);
-              }
+            final fecha = DateTime.tryParse(tarjeta.fechaVencimiento!);
+            if (fecha != null) {
+              notifService.agendarVencimiento(fecha, tarjeta.totalAPagar);
             }
           }
         });

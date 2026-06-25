@@ -16,7 +16,7 @@ Future<void> main() async {
   );
   // Inicializar notificaciones locales solo en móvil.
   if (!kIsWeb) {
-    await NotifService().init();
+    await notifService.init();
   }
   runApp(const ProviderScope(child: PreguntaleApp()));
 }

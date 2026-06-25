@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-// ignore: depend_on_referenced_packages
 import 'package:timezone/data/latest_all.dart' as tz_data;
-// ignore: depend_on_referenced_packages
 import 'package:timezone/timezone.dart' as tz;
+
+/// Singleton compartido entre main.dart y cualquier pantalla que llame a NotifService.
+/// Garantiza que init() y agendarVencimiento() usen la misma instancia de plugin.
+final notifService = NotifService();
 
 /// Servicio de notificaciones locales — solo móvil.
 /// Todas las operaciones son no-op si [kIsWeb] o si el plugin no está disponible.

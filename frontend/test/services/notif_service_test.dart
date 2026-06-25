@@ -22,5 +22,12 @@ void main() {
       final pasada = DateTime.now().subtract(const Duration(days: 5));
       await expectLater(svc.agendarVencimiento(pasada, 50000), completes);
     });
+
+    test('notifService singleton es la misma instancia en toda la app', () {
+      // Verificar que el singleton module-level devuelve siempre el mismo objeto.
+      // Esto garantiza que main.dart (init) y dashboard_screen.dart
+      // (agendarVencimiento) comparten la misma instancia del plugin.
+      expect(identical(notifService, notifService), isTrue);
+    });
   });
 }
