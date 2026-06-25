@@ -243,11 +243,10 @@ async def guardar_manual(
     nuevas = insert_transactions(session, user_id, [txn_schema], fuente="boleta")
     indexar_transacciones(nuevas, user_id)
 
-    # Retrieve the saved transaction id
+    # Retrieve the saved transaction id using deterministic fields (no fragile created_at sort)
     saved = (
         session.query(Transaction)
-        .filter_by(user_id=user_id, descripcion=body.comercio, monto=body.monto)
-        .order_by(Transaction.created_at.desc())
+        .filter_by(user_id=user_id, descripcion=body.comercio, monto=body.monto, fecha=fecha)
         .first()
     )
     txn_id = str(saved.id) if saved else ""

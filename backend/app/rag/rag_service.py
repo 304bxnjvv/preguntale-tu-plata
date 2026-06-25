@@ -7,6 +7,11 @@ from app.rag.vector_store import get_vector_store
 from app.models.schemas import Transaccion, AskResponse, TransaccionCitada
 
 
+_MESES_ES = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
+
 PROMPT = ChatPromptTemplate.from_template("""
 eres el asistente de finanzas personales de confianza del usuario — chileno, cálido, directo y sin juicio.
 habla en minúscula relajada, usa "plata" en vez de "dinero", tutea al usuario y ve al grano.
@@ -171,12 +176,14 @@ def _build_resumen_block(session: Session | None, user_id: str) -> str:
             if fc["tiene_datos"]:
                 from datetime import date as _date
                 hoy = _date.today()
-                mes_nombre = hoy.strftime("%B")
+                mes_nombre = _MESES_ES[hoy.month - 1]
+                gasto_proy_str = f"${fc['gasto_proyectado']:,.0f}".replace(",", ".")
                 linea_fc = (
-                    f"- Proyección de {mes_nombre}: vas a gastar ~${fc['gasto_proyectado']:,.0f} CLP"
+                    f"- Proyección de {mes_nombre}: vas a gastar ~{gasto_proy_str} CLP"
                 )
                 if fc["neto_proyectado"] is not None:
-                    linea_fc += f" (neto proyectado ${fc['neto_proyectado']:,.0f} CLP)"
+                    neto_proy_str = f"${fc['neto_proyectado']:,.0f}".replace(",", ".")
+                    linea_fc += f" (neto proyectado {neto_proy_str} CLP)"
                 lines.append(linea_fc)
         except Exception:
             pass
