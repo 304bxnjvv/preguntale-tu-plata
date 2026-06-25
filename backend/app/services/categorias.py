@@ -99,6 +99,14 @@ def _strip_accents(s: str) -> str:
     )
 
 
+def comercio_key(descripcion: str) -> str:
+    """Clave de comercio para overrides: sin tildes, sin dígitos/puntuación, espacios colapsados."""
+    s = _strip_accents(descripcion).lower()
+    s = re.sub(r"[^a-z\s]", " ", s)   # quita dígitos y puntuación
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
 def categorizar_por_reglas(descripcion: str) -> str | None:
     """
     Devuelve la categoría que corresponde al comercio en `descripcion`,

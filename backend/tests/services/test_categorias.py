@@ -6,6 +6,7 @@ from app.services.categorias import (
     CATEGORIAS,
     categorizar_por_reglas,
     normalizar,
+    comercio_key,
 )
 from app.services.extraction_service import (
     _map,
@@ -308,3 +309,17 @@ def test_extract_from_text_categoria_correcta(monkeypatch):
     # Sin categoría LLM → fallback "Otros"
     sin_cat = next(t for t in txns if "SIN_CATEG" in t.descripcion)
     assert sin_cat.categoria == "Otros"
+
+
+# ---------------------------------------------------------------------------
+# Tests de comercio_key (Task C1)
+# ---------------------------------------------------------------------------
+
+def test_comercio_key_normaliza():
+    assert comercio_key("UBER EATS *1234 STGO") == "uber eats stgo"
+    assert comercio_key("Líder  Express 0098") == "lider express"
+    assert comercio_key("  NETFLIX.COM  ") == "netflix com"
+
+
+def test_comercio_key_vacio():
+    assert comercio_key("12345 ****") == ""
