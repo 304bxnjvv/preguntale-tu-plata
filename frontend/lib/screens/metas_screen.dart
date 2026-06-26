@@ -230,15 +230,39 @@ class _NuevaMetaSheet extends StatefulWidget {
 class _NuevaMetaSheetState extends State<_NuevaMetaSheet> {
   final _nombreCtrl = TextEditingController();
   final _objetivoCtrl = TextEditingController();
-  final _fechaCtrl = TextEditingController();
+  DateTime? _fechaObjetivo;
   bool _guardando = false;
 
   @override
   void dispose() {
     _nombreCtrl.dispose();
     _objetivoCtrl.dispose();
-    _fechaCtrl.dispose();
     super.dispose();
+  }
+
+  String _formatFecha(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _seleccionarFecha() async {
+    final inicial = _fechaObjetivo ?? DateTime.now().add(const Duration(days: 30));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: inicial,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+      builder: (context, child) => Theme(
+        data: ThemeData.dark(useMaterial3: true).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.primary,
+            surface: AppColors.surface,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _fechaObjetivo = picked);
+    }
   }
 
   @override
@@ -273,12 +297,39 @@ class _NuevaMetaSheetState extends State<_NuevaMetaSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _fechaCtrl,
-            style: AppText.body(15),
-            decoration: InputDecoration(
-              labelText: 'Fecha objetivo (opcional, ej: 2026-12-31)',
-              labelStyle: AppText.body(14, color: AppColors.textMuted),
+          // Fecha objetivo con date picker (opcional)
+          GestureDetector(
+            onTap: _seleccionarFecha,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined,
+                      color: AppColors.textMuted, size: 16),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _fechaObjetivo != null
+                          ? _formatFecha(_fechaObjetivo!)
+                          : 'Fecha objetivo (opcional)',
+                      style: _fechaObjetivo != null
+                          ? AppText.body(15)
+                          : AppText.body(15, color: AppColors.textMuted),
+                    ),
+                  ),
+                  if (_fechaObjetivo != null)
+                    GestureDetector(
+                      onTap: () => setState(() => _fechaObjetivo = null),
+                      child: const Icon(Icons.close_rounded,
+                          size: 16, color: AppColors.textMuted),
+                    ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -290,7 +341,8 @@ class _NuevaMetaSheetState extends State<_NuevaMetaSheet> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
                   )
-                : Text('Guardar', style: AppText.body(15, weight: FontWeight.w600, color: AppColors.onPrimary)),
+                : Text('Guardar',
+                    style: AppText.body(15, weight: FontWeight.w600, color: AppColors.onPrimary)),
           ),
         ],
       ),
@@ -302,7 +354,7 @@ class _NuevaMetaSheetState extends State<_NuevaMetaSheet> {
     final objetivoStr = _objetivoCtrl.text.trim().replaceAll('.', '').replaceAll(',', '');
     final objetivo = num.tryParse(objetivoStr);
     if (nombre.isEmpty || objetivo == null || objetivo <= 0) return;
-    final fecha = _fechaCtrl.text.trim().isEmpty ? null : _fechaCtrl.text.trim();
+    final fecha = _fechaObjetivo != null ? _formatFecha(_fechaObjetivo!) : null;
     setState(() => _guardando = true);
     try {
       await widget.onGuardar(nombre, objetivo, fecha);

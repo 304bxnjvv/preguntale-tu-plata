@@ -34,6 +34,12 @@ Widget _wrap({
             200,
             headers: {'content-type': 'application/json; charset=utf-8'},
           ));
+  // Override categoriasProvider with the 11 base categories so the sheet shows kCategorias
+  final categoriasData = CategoriasData(
+    base: kCategorias,
+    personalizadas: const [],
+    todas: kCategorias,
+  );
   return ProviderScope(
     overrides: [
       apiProvider.overrideWith(
@@ -43,6 +49,7 @@ Widget _wrap({
           baseUrl: 'http://localhost/api/v1',
         ),
       ),
+      categoriasProvider.overrideWith((ref) async => categoriasData),
     ],
     child: MaterialApp(
       home: Scaffold(

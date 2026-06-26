@@ -14,6 +14,7 @@ import '../models/alerta.dart';
 import '../models/resumen_semanal.dart';
 import '../models/forecast.dart';
 import '../models/boleta_draft.dart';
+import '../models/categorias_data.dart';
 
 class Subscription {
   final String estado;
@@ -229,6 +230,36 @@ class ApiService {
     if (res.statusCode != 200) {
       throw ApiException('No se pudo eliminar los datos', res.statusCode);
     }
+  }
+
+  // ── Categorías ──────────────────────────────────────────────────────────────
+
+  Future<CategoriasData> getCategorias() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/categorias'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return CategoriasData.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+    }
+    throw ApiException('No se pudieron cargar las categorías', res.statusCode);
+  }
+
+  Future<void> crearCategoria(String nombre) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/categorias'),
+      headers: _headers({'Content-Type': 'application/json; charset=utf-8'}),
+      body: jsonEncode({'nombre': nombre}),
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) return;
+    String? detail;
+    try {
+      final j = jsonDecode(utf8.decode(res.bodyBytes));
+      detail = j['detail']?.toString();
+    } catch (_) {
+      detail = null;
+    }
+    throw ApiException(detail ?? 'No se pudo crear la categoría', res.statusCode);
   }
 
   // ── Presupuestos ────────────────────────────────────────────────────────────

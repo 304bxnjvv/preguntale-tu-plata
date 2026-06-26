@@ -13,6 +13,7 @@ import '../models/meta.dart';
 import '../models/alerta.dart';
 import '../models/resumen_semanal.dart';
 import '../models/forecast.dart';
+import '../models/categorias_data.dart';
 
 export '../models/dashboard_filter.dart' show DashboardFilter, dashboardFilterProvider;
 export '../services/api_service.dart' show Subscription;
@@ -23,6 +24,7 @@ export '../models/meta.dart' show Meta;
 export '../models/alerta.dart' show Alerta;
 export '../models/resumen_semanal.dart' show ResumenSemanal;
 export '../models/forecast.dart' show Forecast, CategoriaRiesgo;
+export '../models/categorias_data.dart' show CategoriasData;
 
 final apiProvider = Provider<ApiService>((ref) {
   return ApiService(
@@ -82,4 +84,8 @@ final resumenSemanalProvider = FutureProvider<ResumenSemanal>((ref) {
 
 final forecastProvider = FutureProvider<Forecast>((ref) {
   return ref.watch(apiProvider).getForecast();
+});
+
+final categoriasProvider = FutureProvider<CategoriasData>((ref) {
+  return ref.watch(apiProvider).getCategorias();
 });

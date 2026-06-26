@@ -73,14 +73,21 @@ class TransactionTile extends ConsumerWidget {
   }
 }
 
-class _CategoriaSheet extends StatelessWidget {
+class _CategoriaSheet extends ConsumerWidget {
   final Transaction txn;
   final void Function(String) onElegida;
 
   const _CategoriaSheet({required this.txn, required this.onElegida});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categoriasAsync = ref.watch(categoriasProvider);
+    final cats = categoriasAsync.when(
+      data: (d) => d.todas,
+      loading: () => kCategorias,
+      error: (_, __) => kCategorias,
+    );
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -100,7 +107,7 @@ class _CategoriaSheet extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: kCategorias.map((cat) {
+              children: cats.map((cat) {
                 final seleccionada = cat == txn.categoria;
                 return ChoiceChip(
                   label: Text(cat),
