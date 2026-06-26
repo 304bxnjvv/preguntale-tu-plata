@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     supabase_url: str
     deepseek_api_key: str = ""  # opcional (legacy; el LLM ahora es OpenAI)
 
+    supabase_service_role_key: str = ""
+
     flow_api_key: str = ""
     flow_secret: str = ""
 
