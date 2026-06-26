@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/data_providers.dart';
 import '../models/summary.dart';
@@ -20,50 +19,7 @@ import '../widgets/resumen_semanal_card.dart';
 import '../widgets/forecast_card.dart';
 import '../services/alertas_seen.dart';
 import '../services/notif_service.dart';
-
-/// Captura una foto de boleta (cámara en móvil, galería en web) y navega a
-/// la pantalla de confirmación. Si hay error, muestra un SnackBar.
-Future<void> _escanearBoleta(BuildContext context, WidgetRef ref) async {
-  final picker = ImagePicker();
-  // En web no existe la cámara nativa; caemos a galería.
-  final source = kIsWeb ? ImageSource.gallery : ImageSource.camera;
-  XFile? file;
-  try {
-    file = await picker.pickImage(source: source, imageQuality: 85);
-  } catch (_) {
-    // Si la cámara no está disponible (ej: emulador), intentar galería.
-    try {
-      file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo acceder a la cámara ni a la galería')),
-        );
-      }
-      return;
-    }
-  }
-
-  if (file == null) return; // usuario canceló
-
-  final bytes = await file.readAsBytes();
-  final ext = file.name.split('.').last.toLowerCase();
-  final api = ref.read(apiProvider);
-
-  try {
-    final draft = await api.escanearBoleta(bytes, file.name.isNotEmpty ? file.name : 'boleta.$ext');
-    if (context.mounted) {
-      final guardado = await context.push<bool>('/boleta', extra: draft);
-      if (guardado == true) _refrescarDatos(ref);
-    }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    }
-  }
-}
+import '../widgets/app_drawer.dart';
 
 void _refrescarDatos(WidgetRef ref) {
   ref.invalidate(summaryProvider);
@@ -107,10 +63,18 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
+      drawer: const AppDrawer(actual: '/dashboard'),
       appBar: AppBar(
         backgroundColor: AppColors.bg,
         elevation: 0,
-        titleSpacing: 16,
+        titleSpacing: 0,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: AppColors.textMuted, size: 22),
+            tooltip: 'Menú',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: Row(
           children: [
             const Orb(size: 36),
@@ -133,46 +97,20 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'subir',
-            onPressed: () async {
-              await context.push('/upload');
-              _refrescarDatos(ref);
-            },
-            backgroundColor: AppColors.surface,
-            foregroundColor: AppColors.text,
-            elevation: 0,
-            tooltip: 'Subir cartola',
-            child: const Icon(Icons.upload_file_rounded, size: 20),
-          ),
-          const SizedBox(width: 10),
-          FloatingActionButton.small(
-            heroTag: 'boleta',
-            onPressed: () => _escanearBoleta(context, ref),
-            backgroundColor: AppColors.accent.withValues(alpha: 0.15),
-            foregroundColor: AppColors.accent,
-            elevation: 0,
-            tooltip: 'Escanear boleta',
-            child: const Icon(Icons.receipt_long_rounded, size: 20),
-          ),
-          const SizedBox(width: 10),
-          FloatingActionButton.extended(
-            heroTag: 'preguntar',
-            onPressed: () async {
-              await context.push('/chat');
-              _refrescarDatos(ref);
-            },
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
-            elevation: 0,
-            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-            label: Text('Preguntar', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.onPrimary)),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'preguntar',
+        onPressed: () async {
+          await context.push('/chat');
+          _refrescarDatos(ref);
+        },
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        elevation: 0,
+        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+        label: Text(
+          'Preguntar',
+          style: AppText.body(14, weight: FontWeight.w600, color: AppColors.onPrimary),
+        ),
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
