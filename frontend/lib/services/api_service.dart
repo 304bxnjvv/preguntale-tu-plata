@@ -232,6 +232,28 @@ class ApiService {
     }
   }
 
+  Future<String> exportarDatos() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/account/export'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return utf8.decode(res.bodyBytes);
+    }
+    throw ApiException('No se pudieron exportar los datos', res.statusCode);
+  }
+
+  Future<Map<String, dynamic>> eliminarCuenta() async {
+    final res = await _client.delete(
+      Uri.parse('$baseUrl/account'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    }
+    throw ApiException('No se pudo eliminar la cuenta', res.statusCode);
+  }
+
   // ── Categorías ──────────────────────────────────────────────────────────────
 
   Future<CategoriasData> getCategorias() async {

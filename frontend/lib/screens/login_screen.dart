@@ -1,5 +1,7 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme.dart';
 import '../widgets/orb.dart';
@@ -15,6 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _password = TextEditingController();
   bool _registrando = false;
   bool _cargando = false;
+  bool _consentido = false; // checkbox 18+ solo en registro
   String? _error;
 
   static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
@@ -29,6 +32,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _validar() {
     if (!_emailRe.hasMatch(_email.text.trim())) return 'ingresa un email válido';
     if (_password.text.length < 6) return 'la contraseña debe tener al menos 6 caracteres';
+    if (_registrando && !_consentido) {
+      return 'debes confirmar que eres mayor de 18 años y aceptar los términos';
+    }
     return null;
   }
 
@@ -65,6 +71,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (low.contains('already registered')) return 'este email ya está registrado';
     if (low.contains('confirm')) return 'revisa tu correo para confirmar la cuenta';
     return m;
+  }
+
+  bool get _submitEnabled {
+    if (_cargando) return false;
+    if (_registrando && !_consentido) return false;
+    return true;
   }
 
   @override
@@ -113,6 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onChanged: (v) => setState(() {
                     _registrando = v;
                     _error = null;
+                    if (!v) _consentido = false;
                   }),
                 ),
                 const SizedBox(height: 20),
@@ -144,6 +157,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
 
+                // Checkbox 18+ solo en modo registro
+                if (_registrando) ...[
+                  const SizedBox(height: 16),
+                  _ConsentCheckbox(
+                    key: const Key('consent_checkbox'),
+                    checked: _consentido,
+                    onChanged: (v) => setState(() => _consentido = v),
+                    onPrivacidad: () => context.push('/legal/privacidad'),
+                    onTerminos: () => context.push('/legal/terminos'),
+                  ),
+                ],
+
                 // Mensaje de error
                 if (_error != null) ...[
                   const SizedBox(height: 12),
@@ -166,7 +191,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Botón primario
                 FilledButton(
                   key: const Key('submit'),
-                  onPressed: _cargando ? null : _submit,
+                  onPressed: _submitEnabled ? _submit : null,
                   child: _cargando
                       ? const SizedBox(
                           width: 20,
@@ -177,7 +202,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         )
                       : Text(
                           _registrando ? 'Crear cuenta' : 'Entrar',
-                          style: AppText.body(16, weight: FontWeight.w600,
+                          style: AppText.body(16,
+                              weight: FontWeight.w600,
                               color: AppColors.onPrimary),
                         ),
                 ),
@@ -194,6 +220,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Checkbox de consentimiento mayor de 18 años con links a legal.
+class _ConsentCheckbox extends StatelessWidget {
+  final bool checked;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onPrivacidad;
+  final VoidCallback onTerminos;
+
+  const _ConsentCheckbox({
+    super.key,
+    required this.checked,
+    required this.onChanged,
+    required this.onPrivacidad,
+    required this.onTerminos,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          key: const Key('consent_check'),
+          value: checked,
+          activeColor: AppColors.primary,
+          onChanged: (v) => onChanged(v ?? false),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: RichText(
+              text: TextSpan(
+                style: AppText.body(13, color: AppColors.textMuted),
+                children: [
+                  const TextSpan(
+                      text: 'Soy mayor de 18 años y acepto la '),
+                  TextSpan(
+                    text: 'Política de Privacidad',
+                    style: AppText.body(13,
+                        color: AppColors.primary,
+                        weight: FontWeight.w600),
+                    recognizer: TapGestureRecognizer()..onTap = onPrivacidad,
+                  ),
+                  const TextSpan(text: ' y los '),
+                  TextSpan(
+                    text: 'Términos y Condiciones',
+                    style: AppText.body(13,
+                        color: AppColors.primary,
+                        weight: FontWeight.w600),
+                    recognizer: TapGestureRecognizer()..onTap = onTerminos,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

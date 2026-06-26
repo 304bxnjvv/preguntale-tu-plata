@@ -14,6 +14,7 @@ import 'screens/presupuestos_screen.dart';
 import 'screens/metas_screen.dart';
 import 'screens/alertas_screen.dart';
 import 'screens/boleta_confirm_screen.dart';
+import 'screens/legal_screen.dart';
 import 'models/boleta_draft.dart';
 import 'providers/data_providers.dart';
 
@@ -46,6 +47,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/presupuestos', builder: (_, __) => const PresupuestosScreen()),
       GoRoute(path: '/metas', builder: (_, __) => const MetasScreen()),
       GoRoute(path: '/alertas', builder: (_, __) => const AlertasScreen()),
+      GoRoute(
+        path: '/legal/privacidad',
+        builder: (_, __) => const LegalScreen(doc: 'privacidad'),
+      ),
+      GoRoute(
+        path: '/legal/terminos',
+        builder: (_, __) => const LegalScreen(doc: 'terminos'),
+      ),
       GoRoute(
         path: '/boleta',
         builder: (context, state) {
