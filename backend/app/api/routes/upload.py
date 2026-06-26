@@ -24,6 +24,7 @@ from app.services.demo_service import clear_demo
 from app.services.tarjeta_service import guardar_estado
 from app.services.categorias import CATEGORIAS, comercio_key
 from app.services.categoria_override_service import upsert_override
+from app.services.categorias_usuario_service import categorias_efectivas
 from app.db.models import Transaction
 
 router = APIRouter()
@@ -142,7 +143,7 @@ async def editar_categoria(
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    if body.categoria not in CATEGORIAS:
+    if body.categoria not in categorias_efectivas(session, user_id):
         raise HTTPException(status_code=422, detail="categoría inválida")
     txn = session.query(Transaction).filter_by(id=txn_id, user_id=user_id).first()
     if txn is None:
@@ -222,7 +223,7 @@ async def guardar_manual(
     session: Session = Depends(get_session),
 ):
     """Guarda una transacción ingresada manualmente (ej. confirmación de boleta escaneada)."""
-    if body.categoria not in CATEGORIAS:
+    if body.categoria not in categorias_efectivas(session, user_id):
         raise HTTPException(status_code=422, detail=f"Categoría inválida: '{body.categoria}'")
 
     try:

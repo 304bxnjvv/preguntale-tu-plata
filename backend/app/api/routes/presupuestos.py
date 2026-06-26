@@ -25,6 +25,7 @@ from app.services.presupuesto_service import (
     estado_presupuestos,
     set_tope,
 )
+from app.services.categorias_usuario_service import categorias_efectivas
 
 router = APIRouter()
 
@@ -49,7 +50,8 @@ async def post_presupuesto(
     session: Session = Depends(get_session),
 ):
     try:
-        estado = set_tope(session, user_id, body.categoria, body.monto_tope)
+        validas = categorias_efectivas(session, user_id)
+        estado = set_tope(session, user_id, body.categoria, body.monto_tope, validas)
     except ValueError:
         raise HTTPException(status_code=422, detail="categoría inválida")
     return PresupuestoEstadoOut(**estado)

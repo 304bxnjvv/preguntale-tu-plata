@@ -22,14 +22,22 @@ def _curr_month_range() -> tuple[date, date]:
     return curr_start, next_month_start
 
 
-def set_tope(session: Session, user_id: str, categoria: str, monto_tope: float) -> dict:
+def set_tope(
+    session: Session,
+    user_id: str,
+    categoria: str,
+    monto_tope: float,
+    categorias_validas: list[str] | None = None,
+) -> dict:
     """UPSERT del tope de presupuesto para (user_id, categoria).
 
-    Raises ValueError si categoria ∉ CATEGORIAS.
+    Raises ValueError si categoria no está en categorias_validas.
+    Si categorias_validas es None se usan las 11 categorías base (CATEGORIAS).
     Devuelve el dict de estado actualizado.
     """
-    if categoria not in CATEGORIAS:
-        raise ValueError(f"Categoría inválida: {categoria!r}. Debe ser una de {CATEGORIAS}")
+    validas = categorias_validas if categorias_validas is not None else CATEGORIAS
+    if categoria not in validas:
+        raise ValueError(f"Categoría inválida: {categoria!r}. Debe ser una de {validas}")
 
     row = session.query(Presupuesto).filter_by(user_id=user_id, categoria=categoria).first()
     if row is None:

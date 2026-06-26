@@ -104,3 +104,13 @@ class Meta(Base):
     fecha_objetivo = Column(Date, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class CategoriaUsuario(Base):
+    __tablename__ = "categorias_usuario"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False, index=True)
+    nombre = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (UniqueConstraint("user_id", "nombre", name="uq_categoria_usuario"),)

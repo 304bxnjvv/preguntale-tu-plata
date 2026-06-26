@@ -276,3 +276,17 @@ class ManualTxnIn(BaseModel):
 class ManualTxnOut(BaseModel):
     ok: bool
     id: str
+
+
+# ---------------------------------------------------------------------------
+# Categorías personalizadas
+# ---------------------------------------------------------------------------
+
+class CategoriaIn(BaseModel):
+    nombre: str
+
+
+class CategoriasResponse(BaseModel):
+    base: list[str]
+    personalizadas: list[str]
+    todas: list[str]
