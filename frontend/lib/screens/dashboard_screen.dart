@@ -134,9 +134,10 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          FloatingActionButton.extended(
+          FloatingActionButton.small(
             heroTag: 'subir',
             onPressed: () async {
               await context.push('/upload');
@@ -145,18 +146,18 @@ class DashboardScreen extends ConsumerWidget {
             backgroundColor: AppColors.surface,
             foregroundColor: AppColors.text,
             elevation: 0,
-            icon: const Icon(Icons.upload_file_rounded, size: 18),
-            label: Text('Subir cartola', style: AppText.body(14, weight: FontWeight.w600)),
+            tooltip: 'Subir cartola',
+            child: const Icon(Icons.upload_file_rounded, size: 20),
           ),
           const SizedBox(width: 10),
-          FloatingActionButton.extended(
+          FloatingActionButton.small(
             heroTag: 'boleta',
             onPressed: () => _escanearBoleta(context, ref),
             backgroundColor: AppColors.accent.withValues(alpha: 0.15),
             foregroundColor: AppColors.accent,
             elevation: 0,
-            icon: const Icon(Icons.receipt_long_rounded, size: 18),
-            label: Text('Boleta', style: AppText.body(14, weight: FontWeight.w600, color: AppColors.accent)),
+            tooltip: 'Escanear boleta',
+            child: const Icon(Icons.receipt_long_rounded, size: 20),
           ),
           const SizedBox(width: 10),
           FloatingActionButton.extended(
