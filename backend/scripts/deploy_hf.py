@@ -16,7 +16,7 @@ from huggingface_hub import upload_folder
 ROOT = Path(__file__).resolve().parent.parent  # carpeta backend/
 
 
-def _token() -> str:
+def _token() -> str | None:
     t = os.environ.get("HF_TOKEN")
     if t:
         return t
@@ -26,7 +26,9 @@ def _token() -> str:
             line = line.strip()
             if line.startswith("HF_TOKEN="):
                 return line.partition("=")[2].strip().strip('"').strip("'")
-    raise SystemExit("HF_TOKEN no encontrado (ni en entorno ni en backend/.env)")
+    # Sin HF_TOKEN explícito → None: huggingface_hub usará el token cacheado
+    # del `huggingface-cli login` (lo que usó el deploy anterior).
+    return None
 
 
 IGNORE = [
