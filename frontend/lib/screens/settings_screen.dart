@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/data_providers.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -35,7 +34,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'esto borrará todas tus transacciones, historial de chat y archivos subidos. la acción no se puede deshacer.',
+                'esto borrará tus transacciones, tarjeta, presupuestos, metas, historial de chat y archivos subidos. tu cuenta queda activa. la acción no se puede deshacer.',
                 style: AppText.body(14, color: AppColors.textMuted),
               ),
               const SizedBox(height: 16),
@@ -85,8 +84,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       await ref.read(apiProvider).deleteAccountData();
       if (mounted) {
-        await Supabase.instance.client.auth.signOut();
-        // router listener will redirect to /login
+        // Invalidar todos los providers de datos del dashboard para que muestren estado vacío
+        ref.invalidate(summaryProvider);
+        ref.invalidate(transactionsProvider);
+        ref.invalidate(chatHistoryProvider);
+        ref.invalidate(suscripcionesProvider);
+        ref.invalidate(comparativoProvider);
+        ref.invalidate(finScoreProvider);
+        ref.invalidate(tarjetaProvider);
+        ref.invalidate(presupuestosProvider);
+        ref.invalidate(metasProvider);
+        ref.invalidate(alertasProvider);
+        ref.invalidate(forecastProvider);
+        ref.invalidate(resumenSemanalProvider);
+        setState(() => _deleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.surface,
+            content: Text(
+              'listo, borramos tus datos.',
+              style: AppText.body(14),
+            ),
+          ),
+        );
+        context.go('/dashboard');
       }
     } on ApiException catch (e) {
       if (mounted) {

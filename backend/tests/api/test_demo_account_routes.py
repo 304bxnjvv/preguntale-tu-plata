@@ -10,7 +10,7 @@ import app.db.models  # noqa: F401
 from app.main import app
 from app.db.base import Base, get_session
 from app.auth.jwt import get_current_user
-from app.db.models import Transaction, ChatMessage, Upload
+from app.db.models import Transaction, ChatMessage, Upload, TarjetaEstado, Presupuesto, Meta, CategoriaOverride
 
 
 @pytest.fixture
@@ -102,8 +102,41 @@ def test_account_delete_clears_all_tables(client):
     assert session.query(Upload).filter_by(user_id="u1").count() == 0
 
 
+def test_account_delete_clears_financial_tables(client):
+    """Bug A: endpoint DELETE /account/data también borra datos financieros del usuario."""
+    c, session = client
+    # Crear datos financieros para u1
+    session.add(TarjetaEstado(user_id="u1", total_a_pagar=10000, monto_minimo=5000,
+                               cupo_total=500000, cupo_utilizado=10000))
+    session.add(Presupuesto(user_id="u1", categoria="Supermercado", monto_tope=100000))
+    session.add(Presupuesto(user_id="u1", categoria="Transporte", monto_tope=50000))
+    session.add(Meta(user_id="u1", nombre="Viaje", monto_objetivo=500000))
+    session.add(CategoriaOverride(user_id="u1", comercio_key="LIDER", categoria="Supermercado"))
+    session.commit()
+
+    r = c.delete("/api/v1/account/data")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["tarjeta"] == 1
+    assert data["presupuestos"] == 2
+    assert data["metas"] == 1
+    assert data["overrides"] == 1
+
+    assert session.query(TarjetaEstado).filter_by(user_id="u1").count() == 0
+    assert session.query(Presupuesto).filter_by(user_id="u1").count() == 0
+    assert session.query(Meta).filter_by(user_id="u1").count() == 0
+    assert session.query(CategoriaOverride).filter_by(user_id="u1").count() == 0
+
+
 def test_account_delete_empty_returns_zeros(client):
     c, _ = client
     r = c.delete("/api/v1/account/data")
     assert r.status_code == 200
-    assert r.json() == {"transactions": 0, "chat": 0, "uploads": 0}
+    data = r.json()
+    assert data["transactions"] == 0
+    assert data["chat"] == 0
+    assert data["uploads"] == 0
+    assert data["tarjeta"] == 0
+    assert data["presupuestos"] == 0
+    assert data["metas"] == 0
+    assert data["overrides"] == 0
